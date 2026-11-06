@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Body Fat Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#0d9488}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;transition:.2s}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px}
+input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);outline:none}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;color:var(--muted)}
+.btn{padding:11px 16px;border-radius:10px;font-weight:700;background:var(--accent);color:white}
+.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.muted{color:var(--muted)}.value{font-size:34px;font-weight:800;color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="p-4 flex justify-between items-center max-w-5xl mx-auto">
+<a href="../index.html" class="font-bold text-teal-600">← CalcSuite</a>
+<div class="flex gap-2"><button class="btn secondary" onclick="toggleTheme()">☼ Theme</button></div>
+</header>
+
+<main class="max-w-5xl mx-auto p-4 space-y-5">
+<section>
+<p class="text-sm font-bold text-teal-600">HEALTH & FITNESS</p>
+<h1 class="text-3xl font-extrabold mt-1">Body Fat Calculator</h1>
+<p class="muted mt-2">Estimate your body fat percentage using the US Navy circumference method.</p>
+</section>
+
+<section class="card">
+<h2 class="font-bold text-lg mb-4">Your measurements</h2>
+<div class="grid sm:grid-cols-2 gap-4">
+<div><label>Sex</label><select id="sex"><option value="male">Male</option><option value="female">Female</option></select></div>
+<div><label>Measurement unit</label><select id="unit" onchange="updateUnit()"><option value="metric">Metric (cm, kg)</option><option value="imperial">Imperial (in, lb)</option></select></div>
+<div><label>Age (years)</label><input id="age" type="number" min="18" max="100" value="30"></div>
+<div><label>Height (<span class="unitHeight">cm</span>)</label><input id="height" type="number" min="1" step="0.1" value="175"></div>
+<div><label>Weight (<span class="unitWeight">kg</span>)</label><input id="weight" type="number" min="1" step="0.1" value="75"></div>
+<div><label>Neck circumference (<span class="unitLength">cm</span>)</label><input id="neck" type="number" min="1" step="0.1" value="38"></div>
+<div><label>Waist circumference (<span class="unitLength">cm</span>)</label><input id="waist" type="number" min="1" step="0.1" value="85"></div>
+<div id="hipBox"><label>Hip circumference (<span class="unitLength">cm</span>)</label><input id="hip" type="number" min="1" step="0.1" value="95"></div>
+</div>
+<p class="muted text-xs mt-4">Measure snugly without compressing the skin. For women, hip measurement is required. This calculator is intended for adults.</p>
+<button class="btn w-full mt-5" onclick="calculate()">Calculate Body Fat</button>
+</section>
+
+<section id="result" class="card hidden space-y-4">
+<h2 class="font-bold text-lg">Your results</h2>
+<div class="text-center py-4">
+<div class="value" id="bf">--%</div>
+<p class="muted">Estimated body fat percentage</p>
+<p class="font-bold mt-2" id="category"></p>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+<div class="rounded-xl p-3" style="background:var(--bg)"><p class="muted text-xs">Fat mass</p><b id="fatMass">--</b></div>
+<div class="rounded-xl p-3" style="background:var(--bg)"><p class="muted text-xs">Lean mass</p><b id="leanMass">--</b></div>
+<div class="rounded-xl p-3" style="background:var(--bg)"><p class="muted text-xs">BMI</p><b id="bmi">--</b></div>
+</div>
+<div class="text-sm muted" id="explanation"></div>
+<div class="flex flex-wrap gap-2">
+<button class="btn" onclick="downloadCSV()">Download CSV</button>
+<button class="btn secondary" onclick="downloadPDF()">Download PDF</button>
+</div>
+</section>
+<div class="card text-sm muted"><b>Important:</b> This is an estimate, not a medical measurement. The Navy formula can differ from DEXA and other clinical methods. Consult a qualified professional for health decisions.</div>
+</main>
+
+<script>
+let lastResult=null;
+function toggleTheme(){document.documentElement.classList.toggle('dark');localStorage.setItem('calcsuite-theme',document.documentElement.classList.contains('dark')?'dark':'light')}
+if(localStorage.getItem('calcsuite-theme')==='dark')document.documentElement.classList.add('dark');
+function updateUnit(){
+ const imp=unit.value==='imperial';
+ document.querySelectorAll('.unitHeight').forEach(x=>x.textContent=imp?'in':'cm');
+ document.querySelectorAll('.unitWeight').forEach(x=>x.textContent=imp?'lb':'kg');
+ document.querySelectorAll('.unitLength').forEach(x=>x.textContent=imp?'in':'cm');
+}
+sex.addEventListener('change',()=>hipBox.style.display=sex.value==='female'?'block':'none');
+function calculate(){
+ const imp=unit.value==='imperial',s=sex.value;
+ const h=+height.value*(imp?2.54:1),w=+weight.value*(imp?0.453592:1);
+ const n=+neck.value*(imp?2.54:1),wa=+waist.value*(imp?2.54:1),hp=+hip.value*(imp?2.54:1);
+ const a=+age.value;
+ if(![h,w,n,wa].every(v=>v>0)||a<18||a>100||n>=wa||(s==='female'&&hp<=0)|| (s==='female'&&wa+n<=hp)){
+ alert('Please enter valid measurements. Check that waist is larger than neck.');return;
+ }
+ // US Navy formula, measurements converted to inches.
+ const inch=h/2.54,ni=n/2.54,wai=wa/2.54,hpi=hp/2.54;
+ let bf;
+ if(s==='male')bf=495/(1.0324-0.19077*Math.log10(wai-ni)+0.15456*Math.log10(inch))-450;
+ else bf=495/(1.29579-0.35004*Math.log10(wai+hpi-ni)+0.22100*Math.log10(inch))-450;
+ if(!Number.isFinite(bf)||bf<0||bf>70){alert('Measurements produced an invalid estimate. Please check them.');return}
+ const fat=w*bf/100,lean=w-fat,bmi=w/((h/100)**2);
+ let cat;
+ if(s==='male')cat=bf<6?'Essential fat range':bf<14?'Athletic range':bf<18?'Fitness range':bf<25?'Average range':'Higher body-fat range';
+ else cat=bf<14?'Essential fat range':bf<21?'Athletic range':bf<25?'Fitness range':bf<32?'Average range':'Higher body-fat range';
+ lastResult={sex:s,age:a,height:h,weight:w,bodyFat:bf,fatMass:fat,leanMass:lean,bmi,category:cat};
+ document.getElementById('bf').textContent=bf.toFixed(1)+'%';
+ category.textContent=cat;
+ fatMass.textContent=fat.toFixed(1)+' kg';
+ leanMass.textContent=lean.toFixed(1)+' kg';
+ bmi.textContent=bmi.toFixed(1);
+ explanation.textContent='Estimated from the US Navy circumference equation. Body-fat category bands are broad reference ranges and are not a diagnosis.';
+ result.classList.remove('hidden');
+}
+function downloadCSV(){
+ if(!lastResult)return;
+ const rows=[['Metric','Value'],...Object.entries(lastResult)];
+ const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='body-fat-results.csv';a.click();URL.revokeObjectURL(a.href);
+}
+function downloadPDF(){
+ if(!lastResult)return;
+ const {jsPDF}=window.jspdf;const d=new jsPDF();
+ d.setFontSize(20);d.text('CalcSuite - Body Fat Report',15,20);
+ d.setFontSize(12);let y=35;
+ Object.entries(lastResult).forEach(([k,v])=>{d.text(k+': '+(typeof v==='number'?v.toFixed(2):v),15,y);y+=9});
+ d.save('body-fat-report.pdf');
+}
+</script>
+</body>
+</html>
