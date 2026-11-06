@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CalcHub — Master Calculator Dashboard</title>
+<meta name="description" content="A curated hub of 45+ free online calculators for finance, health, math and fitness. Search, filter, and launch any calculator instantly." />
+<meta name="theme-color" content="#08090d" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif']
+        }
+      }
+    }
+  };
+</script>
+
+<style>
+  /* ---------- Base ---------- */
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection { background: rgba(99, 102, 241, .25); }
+
+  /* Hide native search clear button */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+
+  /* ---------- Scrollbar (subtle) ---------- */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ---------- Theme icon swap ---------- */
+  .icon-sun { display: block; }
+  .icon-moon { display: none; }
+  html.dark .icon-sun { display: none; }
+  html.dark .icon-moon { display: block; }
+
+  /* ---------- Category tabs ---------- */
+  .tab {
+    flex-shrink: 0;
+    border-radius: 9999px;
+    padding: .5rem 1rem;
+    font-size: .8125rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1px solid rgb(226 232 240);
+    background: #ffffff;
+    color: rgb(51 65 85);
+    transition: background-color .2s, color .2s, border-color .2s, box-shadow .2s, transform .15s;
+  }
+  .tab:hover {
+    border-color: rgb(199 210 254);
+    color: rgb(67 56 202);
+    box-shadow: 0 6px 16px -10px rgba(79, 70, 229, .8);
+  }
+  .tab:active { transform: scale(.97); }
+  .tab:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(99, 102, 241, .35); }
+  .tab.is-active {
+    background: rgb(79 70 229);
+    border-color: rgb(79 70 229);
+    color: #fff;
+    box-shadow: 0 10px 24px -10px rgba(79, 70, 229, .9);
+  }
+  html.dark .tab {
+    background: rgba(255, 255, 255, .03);
+    border-color: rgba(255, 255, 255, .09);
+    color: rgb(148 163 184);
+  }
+  html.dark .tab:hover {
+    background: rgba(255, 255, 255, .07);
+    border-color: rgba(129, 140, 248, .45);
+    color: #fff;
+  }
+  html.dark .tab.is-active {
+    background: rgb(99 102 241);
+    border-color: rgb(99 102 241);
+    color: #fff;
+    box-shadow: 0 10px 28px -10px rgba(99, 102, 241, 1);
+  }
+
+  /* ---------- Card entrance ---------- */
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px) scale(.975); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .card-in {
+    animation: cardIn .5s cubic-bezier(.16, 1, .3, 1) both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fadeUp .6s cubic-bezier(.16, 1, .3, 1) both; }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .card-in, .fade-up { animation: none !important; }
+    * { transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased transition-colors duration-300 dark:bg-[#08090d] dark:text-slate-100">
+
+  <!-- ============================= HEADER ============================= -->
+  <header class="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl transition-colors duration-300 dark:border-white/[0.07] dark:bg-[#0b0c11]/80">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col gap-3 py-3 md:flex-row md:items-center md:gap-6 md:py-4">
+
+        <!-- Brand + mobile theme toggle -->
+        <div class="flex items-center justify-between gap-3 md:justify-start">
+          <a href="./index.html" class="group flex items-center gap-2.5">
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30 transition-transform duration-300 group-hover:scale-105">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2.5"/>
+                <path d="M8 6.5h8"/>
+                <path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h.01M12 19h.01M16 19h.01"/>
+              </svg>
+            </span>
+            <span class="leading-none">
+              <span class="block text-[15px] font-bold tracking-tight text-slate-900 dark:text-white">CalcHub</span>
+              <span class="mt-1 block text-[11px] font-medium text-slate-500 dark:text-slate-400">Master Dashboard</span>
+            </span>
+          </a>
+
+          <button type="button" class="theme-toggle grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 md:hidden dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white" aria-label="Toggle dark mode">
+            <svg class="icon-sun h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+            </svg>
+            <svg class="icon-moon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div class="relative flex-1">
+          <div class="group relative">
+            <svg class="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-500 dark:text-slate-500 dark:group-focus-within:text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
+            </svg>
+
+            <input
+              id="search"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder='Search calculators… try "mortgage", "bmi", "loan"'
+              aria-label="Search calculators"
+              class="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2.5 pl-11 pr-20 text-sm text-slate-900 placeholder:text-slate-400 transition-all duration-200 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-400/60 dark:focus:bg-white/[0.06] dark:focus:ring-indigo-500/15"
+            />
+
+            <kbd id="kbdHint" class="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-semibold text-slate-400 sm:flex dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-500">/</kbd>
+
+            <button
+              id="clearSearch"
+              type="button"
+              aria-label="Clear search"
+              class="absolute right-2.5 top-1/2 hidden h-7 w-7 -translate-y-1/2 place-items-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200/70 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Desktop theme toggle -->
+        <button type="button" class="theme-toggle hidden h-10 w-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 md:grid dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:hover:bg-white/[0.08] dark:hover:text-white" aria-label="Toggle dark mode">
+          <svg class="icon-sun h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+          <svg class="icon-moon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================= HERO ============================= -->
+  <section class="relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div class="absolute left-1/2 top-[-14rem] h-[28rem] w-[52rem] -translate-x-1/2 rounded-full bg-indigo-500/20 blur-[130px] dark:bg-indigo-600/25"></div>
+      <div class="absolute -right-24 top-16 h-72 w-72 rounded-full bg-fuchsia-500/10 blur-[110px] dark:bg-fuchsia-600/20"></div>
+      <div class="absolute -left-24 top-32 h-64 w-64 rounded-full bg-sky-400/10 blur-[110px] dark:bg-sky-500/15"></div>
+    </div>
+
+    <div class="mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6 lg:px-8 lg:pb-10 lg:pt-14">
+      <div class="fade-up max-w-3xl">
+        <span class="inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/80 px-3 py-1 text-[11.5px] font-semibold uppercase tracking-wider text-indigo-700 dark:border-indigo-400/20 dark:bg-indigo-500/10 dark:text-indigo-300">
+          <span class="relative flex h-1.5 w-1.5">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-500 opacity-75"></span>
+            <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400"></span>
+          </span>
+          <span id="heroBadge">45+ calculators</span>
+        </span>
+
+        <h1 class="mt-5 text-[2rem] font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:text-[2.75rem] lg:text-5xl dark:text-white">
+          Every calculator you need,
+          <span class="bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-500 bg-clip-text text-transparent dark:from-indigo-400 dark:via-violet-400 dark:to-fuchsia-400">one beautiful hub.</span>
+        </h1>
+
+        <p class="mt-4 max-w-xl text-[15px] leading-relaxed text-slate-600 dark:text-slate-400">
+          Instantly search across finance, health, math and fitness tools. No sign-ups, no clutter — just fast, accurate answers.
+        </p>
+
+        <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] font-medium text-slate-500 dark:text-slate-400">
+          <span class="inline-flex items-center gap-1.5">
+            <svg class="h-4 w-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span id="statTotal">45</span> calculators
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <svg class="h-4 w-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            4 categories
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <svg class="h-4 w-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            100% free forever
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= MAIN ============================= -->
+  <main class="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+
+    <!-- Category tabs + result count -->
+    <div class="flex flex-col gap-4 border-b border-slate-200/70 pb-5 dark:border-white/[0.07] sm:flex-row sm:items-center sm:justify-between">
+      <div class="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="tablist" aria-label="Filter by category">
+        <button class="tab is-active" data-cat="All" role="tab" aria-selected="true">All</button>
+        <button class="tab" data-cat="Financial" role="tab" aria-selected="false">Financial</button>
+        <button class="tab" data-cat="Health &amp; Fitness" role="tab" aria-selected="false">Health &amp; Fitness</button>
+        <button class="tab" data-cat="Math" role="tab" aria-selected="false">Math</button>
+        <button class="tab" data-cat="Fitness" role="tab" aria-selected="false">Fitness</button>
+      </div>
+
+      <p class="shrink-0 text-[12.5px] font-medium text-slate-500 dark:text-slate-400" aria-live="polite">
+        Showing <span id="resultCount" class="font-semibold text-slate-900 dark:text-white">45</span>
+        of <span id="totalCount" class="font-semibold text-slate-900 dark:text-white">45</span> calculators
+      </p>
+    </div>
+
+    <!-- Grid -->
+    <div id="grid" class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="hidden flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-16 text-center dark:border-white/10 dark:bg-white/[0.02]">
+      <div class="grid h-14 w-14 place-items-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-white/[0.06] dark:text-slate-500">
+        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8.5 11h5"/>
+        </svg>
+      </div>
+      <h3 class="mt-4 text-base font-semibold text-slate-900 dark:text-white">No calculators found</h3>
+      <p class="mt-1.5 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+        We couldn't find anything matching <span id="emptyQuery" class="font-semibold text-slate-700 dark:text-slate-200"></span>. Try a different keyword or reset your filters.
+      </p>
+      <button id="resetFilters" type="button" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/25 transition-all hover:bg-indigo-500 hover:shadow-indigo-600/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:focus-visible:ring-offset-[#08090d]">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>
+        </svg>
+        Reset filters
+      </button>
+    </div>
+
+  </main>
+
+  <!-- ============================= FOOTER ============================= -->
+  <footer class="border-t border-slate-200/70 bg-white/60 transition-colors duration-300 dark:border-white/[0.07] dark:bg-white/[0.015]">
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div class="flex flex-col items-center justify-between gap-6 sm:flex-row">
+
+        <div class="flex flex-col items-center gap-2 text-center sm:items-start sm:text-left">
+          <a href="./index.html" class="flex items-center gap-2.5">
+            <span class="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2.5"/>
+                <path d="M8 6.5h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01"/>
+              </svg>
+            </span>
+            <span class="text-[15px] font-bold tracking-tight text-slate-900 dark:text-white">CalcHub</span>
+          </a>
+          <p class="text-[12.5px] text-slate-500 dark:text-slate-400">
+            Built for speed. Designed for clarity. © <span id="year">2024</span> CalcHub.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="https://github.com/yourusername/calchub" target="_blank" rel="noopener noreferrer"
+             class="group inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-semibold text-slate-700 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-900/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/[0.08] dark:focus-visible:ring-offset-[#08090d]">
+            <svg class="h-[18px] w-[18px] transition-transform duration-300 group-hover:rotate-12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.18-1.49 3.14-1.18 3.14-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.4-5.27 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/>
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================= SCRIPT ============================= -->
+  <script>
+  (function () {
+    'use strict';
+
+    /* ------------------------------------------------------------------
+       1. ICON LIBRARY (Feather-style, stroke based)
+    ------------------------------------------------------------------ */
+    const ICONS = {
+      calculator: '<rect x="4" y="2" width="16" height="20" rx="2.5"/><path d="M8 6.5h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 19h.01M12 19h.01M16 19h.01"/>',
+      home: '<path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/>',
+      wallet: '<rect x="3" y="6" width="18" height="14" rx="2.5"/><path d="M3 10h18"/><circle cx="17" cy="15" r="1"/>',
+      bank: '<path d="M3 21h18M4 10h16M5 10v11M9.5 10v11M14.5 10v11M19 10v11M12 3l9 5H3z"/>',
+      percent: '<path d="M19 5 5 19"/><circle cx="6.5" cy="6.5" r="2.6"/><circle cx="17.5" cy="17.5" r="2.6"/>',
+      trending: '<path d="M23 6 13.5 15.5 8.5 10.5 1 18"/><path d="M17 6h6v6"/>',
+      chart: '<path d="M18 20V10M12 20V4M6 20v-6"/><path d="M3 20h18"/>',
+      heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+      activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+      flame: '<path d="M12 2c1.6 3.9 5 5.6 5 10a5 5 0 0 1-10 0c0-2 1-3.6 2-4.6.5 1.1 1.5 1.8 1.5 1.8C10 6.2 11 4 12 2z"/>',
+      droplet: '<path d="M12 2.7 17.3 8a7.5 7.5 0 1 1-10.6 0L12 2.7z"/>',
+      user: '<circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/>',
+      scale: '<path d="M12 3v18M7.5 21h9M5 7h14"/><path d="M5 7 2 13.5a3.2 3.2 0 0 0 6 0L5 7z"/><path d="M19 7l-3 6.5a3.2 3.2 0 0 0 6 0L19 7z"/>',
+      dumbbell: '<path d="M6.5 6.5v11M3.5 9v6M17.5 6.5v11M20.5 9v6M6.5 12h11"/>',
+      clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/>',
+      sigma: '<path d="M18 4H6l6 8-6 8h12"/>',
+      triangle: '<path d="M12 3.5 21 20H3z"/>',
+      dice: '<rect x="3" y="3" width="18" height="18" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1"/><circle cx="15.5" cy="15.5" r="1.1"/><circle cx="12" cy="12" r="1.1"/>',
+      matrix: '<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/>',
+      slope: '<path d="M6.5 17.5 17.5 6.5"/><path d="M9 6.5h8.5V15"/>',
+      shuffle: '<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="m4 4 5 5"/>',
+      calendar: '<rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M16 2.5v4M8 2.5v4M3 10.5h18"/>',
+      shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+      receipt: '<path d="M5 3h14v18l-2.3-1.6L14.4 21l-2.4-1.6L9.6 21l-2.3-1.6L5 21z"/><path d="M9 8h6M9 12h6"/>',
+      flask: '<path d="M9.5 3h5"/><path d="M10 3v6L4.7 18a2 2 0 0 0 1.7 3h11.2a2 2 0 0 0 1.7-3L14 9V3"/>',
+      gauge: '<path d="M12 14l4.2-4.2"/><circle cx="12" cy="14" r="1.4"/><path d="M3.5 18a9 9 0 1 1 17 0"/>',
+      baby: '<circle cx="12" cy="7.5" r="3.5"/><path d="M6 21a6 6 0 0 1 12 0"/><path d="M9 5.5c.8.8 5.2.8 6 0"/>',
+      coins: '<circle cx="9" cy="9" r="6"/><path d="M18.1 10.4A6 6 0 1 1 10.4 18.1"/><path d="M6.5 7h1v4"/>',
+      target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>'
+    };
+
+    /* ------------------------------------------------------------------
+       2. CATEGORY THEME MAP
+    ------------------------------------------------------------------ */
+    const CATEGORIES = {
+      'Financial': {
+        icon: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300',
+        ring: 'ring-emerald-600/10 dark:ring-emerald-400/20',
+        badge: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20',
+        glow: 'rgba(16,185,129,.35)'
+      },
+      'Health & Fitness': {
+        icon: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300',
+        ring: 'ring-rose-600/10 dark:ring-rose-400/20',
+        badge: 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-400/20',
+        glow: 'rgba(244,63,94,.35)'
+      },
+      'Math': {
+        icon: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-300',
+        ring: 'ring-sky-600/10 dark:ring-sky-400/20',
+        badge: 'bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-400/20',
+        glow: 'rgba(14,165,233,.35)'
+      },
+      'Fitness': {
+        icon: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300',
+        ring: 'ring-amber-600/10 dark:ring-amber-400/20',
+        badge: 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20',
+        glow: 'rgba(245,158,11,.35)'
+      }
+    };
+
+    /* ------------------------------------------------------------------
+       3. CALCULATOR DATA
+    ------------------------------------------------------------------ */
+    const CALCULATORS = [
+      /* ---------- Financial ---------- */
+      { title: 'Mortgage Calculator', desc: 'Estimate monthly payments, total interest, and a full amortization schedule.', category: 'Financial', icon: 'home', path: 'financial/mortgage.html', keywords: 'house home loan emi amortization property' },
+      { title: 'Loan Calculator', desc: 'Work out repayments for personal, student, or business loans in seconds.', category: 'Financial', icon: 'wallet', path: 'financial/loan.html', keywords: 'borrow repayment installment' },
+      { title: 'Auto Loan Calculator', desc: 'Calculate car payments including taxes, trade-in value, and financing.', category: 'Financial', icon: 'receipt', path: 'financial/auto-loan.html', keywords: 'car vehicle finance dealer' },
+      { title: 'Interest Calculator', desc: 'Solve for simple or compound interest with flexible compounding options.', category: 'Financial', icon: 'percent', path: 'financial/interest.html', keywords: 'simple compound rate apr' },
+      { title: 'Payment Calculator', desc: 'Find the monthly payment for any loan or remaining mortgage balance.', category: 'Financial', icon: 'receipt', path: 'financial/payment.html', keywords: 'monthly installment emi' },
+      { title: 'Amortization Calculator', desc: 'Visualize how each payment splits between principal and interest.', category: 'Financial', icon: 'chart', path: 'financial/amortization.html', keywords: 'schedule principal payoff' },
+      { title: 'Investment Calculator', desc: 'Project the future value of investments with recurring contributions.', category: 'Financial', icon: 'trending', path: 'financial/investment.html', keywords: 'portfolio stocks returns sip' },
+      { title: 'Compound Interest', desc: 'See how savings grow when interest compounds over months or years.', category: 'Financial', icon: 'chart', path: 'financial/compound-interest.html', keywords: 'growth savings apy' },
+      { title: 'Retirement Calculator', desc: 'Plan your nest egg and check whether you are on track to retire.', category: 'Financial', icon: 'shield', path: 'financial/retirement.html', keywords: 'pension nest egg savings plan' },
+      { title: 'Inflation Calculator', desc: 'Compare purchasing power across years using official CPI data.', category: 'Financial', icon: 'trending', path: 'financial/inflation.html', keywords: 'cpi purchasing power cost of living' },
+      { title: 'Salary Calculator', desc: 'Convert hourly, weekly, and monthly pay into an annual salary.', category: 'Financial', icon: 'coins', path: 'financial/salary.html', keywords: 'wage hourly annual pay income' },
+      { title: 'Income Tax Calculator', desc: 'Estimate federal and state tax with brackets, credits, and deductions.', category: 'Financial', icon: 'receipt', path: 'financial/income-tax.html', keywords: 'irs tax bracket refund' },
+      { title: 'Credit Card Payoff', desc: 'Discover how long it takes to clear a balance at your current APR.', category: 'Financial', icon: 'wallet', path: 'financial/credit-card.html', keywords: 'debt apr minimum payment' },
+      { title: 'Sales Tax Calculator', desc: 'Add or remove sales tax and find the net price instantly.', category: 'Financial', icon: 'percent', path: 'financial/sales-tax.html', keywords: 'vat gst tax rate price' },
+      { title: 'Currency Converter', desc: 'Convert between 150+ world currencies with up-to-date rates.', category: 'Financial', icon: 'bank', path: 'financial/currency.html', keywords: 'exchange forex usd eur money' },
+      { title: '401(k) Calculator', desc: 'Estimate your retirement balance including employer matching.', category: 'Financial', icon: 'shield', path: 'financial/401k.html', keywords: 'retirement match contribution' },
+
+      /* ---------- Health & Fitness ---------- */
+      { title: 'BMI Calculator', desc: 'Body mass index from height and weight with a healthy-range chart.', category: 'Health & Fitness', icon: 'activity', path: 'health/bmi.html', keywords: 'body mass index weight height obesity' },
+      { title: 'BMR Calculator', desc: 'Basal metabolic rate — the calories your body burns at complete rest.', category: 'Health & Fitness', icon: 'flame', path: 'health/bmr.html', keywords: 'metabolism resting calories' },
+      { title: 'Calorie Calculator', desc: 'Daily calorie needs based on age, gender, activity, and goals.', category: 'Health & Fitness', icon: 'flame', path: 'health/calorie.html', keywords: 'diet intake weight loss gain' },
+      { title: 'Body Fat Calculator', desc: 'Estimate body fat percentage using the US Navy tape method.', category: 'Health & Fitness', icon: 'scale', path: 'health/body-fat.html', keywords: 'navy fat percentage composition' },
+      { title: 'Ideal Weight Calculator', desc: 'Healthy weight ranges from BMI, Robinson, and Devine formulas.', category: 'Health & Fitness', icon: 'scale', path: 'health/ideal-weight.html', keywords: 'healthy weight range devine' },
+      { title: 'Pregnancy Calculator', desc: 'Track weekly milestones and your estimated due date.', category: 'Health & Fitness', icon: 'baby', path: 'health/pregnancy.html', keywords: 'trimester weeks baby gestation' },
+      { title: 'Due Date Calculator', desc: 'Estimate delivery dates from conception or your last period.', category: 'Health & Fitness', icon: 'calendar', path: 'health/due-date.html', keywords: 'edd lmp conception birth' },
+      { title: 'Ovulation Calculator', desc: 'Predict ovulation and your most fertile window for conception.', category: 'Health & Fitness', icon: 'calendar', path: 'health/ovulation.html', keywords: 'fertility cycle period conceive' },
+      { title: 'Water Intake Calculator', desc: 'How much water you should drink based on weight and activity.', category: 'Health & Fitness', icon: 'droplet', path: 'health/water-intake.html', keywords: 'hydration fluids drink' },
+      { title: 'Macro Calculator', desc: 'Split daily calories into protein, carbs, and fat targets.', category: 'Health & Fitness', icon: 'target', path: 'health/macro.html', keywords: 'macros protein carbs fat iifym' },
+      { title: 'Sleep Calculator', desc: 'Find the best bedtime based on natural 90-minute sleep cycles.', category: 'Health & Fitness', icon: 'clock', path: 'health/sleep.html', keywords: 'bedtime cycle rest insomnia' },
+
+      /* ---------- Math ---------- */
+      { title: 'Scientific Calculator', desc: 'Full-featured scientific calculator with trig, logs, and memory.', category: 'Math', icon: 'calculator', path: 'math/scientific.html', keywords: 'trig sine cosine log sqrt' },
+      { title: 'Percentage Calculator', desc: 'Percentage change, increase/decrease, and "of" value problems.', category: 'Math', icon: 'percent', path: 'math/percentage.html', keywords: 'percent discount increase decrease' },
+      { title: 'Fraction Calculator', desc: 'Add, subtract, multiply, divide, and simplify fractions step by step.', category: 'Math', icon: 'sigma', path: 'math/fraction.html', keywords: 'numerator denominator simplify mixed' },
+      { title: 'Average Calculator', desc: 'Mean, median, mode, range, and sum for any data set.', category: 'Math', icon: 'chart', path: 'math/average.html', keywords: 'mean median mode statistics' },
+      { title: 'Standard Deviation', desc: 'Population and sample standard deviation with full working steps.', category: 'Math', icon: 'chart', path: 'math/standard-deviation.html', keywords: 'variance sigma statistics spread' },
+      { title: 'Triangle Calculator', desc: 'Solve triangles from sides or angles using the law of sines.', category: 'Math', icon: 'triangle', path: 'math/triangle.html', keywords: 'geometry angles sides area' },
+      { title: 'Quadratic Formula', desc: 'Real and complex roots of any quadratic equation, step by step.', category: 'Math', icon: 'sigma', path: 'math/quadratic.html', keywords: 'roots parabola discriminant algebra' },
+      { title: 'Matrix Calculator', desc: 'Multiply, invert, and find determinants of matrices up to 4x4.', category: 'Math', icon: 'matrix', path: 'math/matrix.html', keywords: 'determinant inverse linear algebra' },
+      { title: 'Random Number Generator', desc: 'Generate truly random numbers within any custom range.', category: 'Math', icon: 'dice', path: 'math/random-number.html', keywords: 'rng lottery pick dice' },
+      { title: 'Slope Calculator', desc: 'Rise over run, angle, and distance between two points.', category: 'Math', icon: 'slope', path: 'math/slope.html', keywords: 'gradient line intercept geometry' },
+
+      /* ---------- Fitness ---------- */
+      { title: 'One Rep Max Calculator', desc: 'Estimate your 1RM and plan training percentages with confidence.', category: 'Fitness', icon: 'dumbbell', path: 'fitness/one-rep-max.html', keywords: '1rm strength lifting bench squat' },
+      { title: 'TDEE Calculator', desc: 'Total daily energy expenditure with activity multipliers.', category: 'Fitness', icon: 'flame', path: 'fitness/tdee.html', keywords: 'maintenance calories energy expenditure' },
+      { title: 'Protein Calculator', desc: 'Daily protein targets for muscle gain, fat loss, or maintenance.', category: 'Fitness', icon: 'target', path: 'fitness/protein.html', keywords: 'muscle macros intake grams' },
+      { title: 'Lean Body Mass', desc: 'Estimate the weight of everything in your body except stored fat.', category: 'Fitness', icon: 'user', path: 'fitness/lean-body-mass.html', keywords: 'lbm muscle fat free mass' },
+      { title: 'Target Heart Rate', desc: 'Training zones for fat burn, cardio, and peak performance.', category: 'Fitness', icon: 'heart', path: 'fitness/heart-rate.html', keywords: 'zones cardio bpm max heart' },
+      { title: 'Calories Burned', desc: 'Energy burned by activity type, duration, and body weight.', category: 'Fitness', icon: 'activity', path: 'fitness/calories-burned.html', keywords: 'exercise running workout burn' },
+      { title: 'Pace Calculator', desc: 'Split times for running, cycling, and swimming distances.', category: 'Fitness', icon: 'gauge', path: 'fitness/pace.html', keywords: 'running marathon split speed mph' },
+      { title: 'Body Type Calculator', desc: 'Ectomorph, mesomorph, or endomorph — find your somatotype.', category: 'Fitness', icon: 'user', path: 'fitness/body-type.html', keywords: 'somatotype ectomorph mesomorph' },
+      { title: 'Army Body Fat', desc: 'U.S. Army body fat standard and compliance check.', category: 'Fitness', icon: 'shield', path: 'fitness/army-body-fat.html', keywords: 'military standard tape test' }
+    ];
+
+    /* ------------------------------------------------------------------
+       4. DOM REFS
+    ------------------------------------------------------------------ */
+    const gridEl       = document.getElementById('grid');
+    const searchEl     = document.getElementById('search');
+    const clearBtn     = document.getElementById('clearSearch');
+    const kbdHint      = document.getElementById('kbdHint');
+    const tabs         = Array.from(document.querySelectorAll('.tab'));
+    const emptyState   = document.getElementById('emptyState');
+    const emptyQuery   = document.getElementById('emptyQuery');
+    const resetBtn     = document.getElementById('resetFilters');
+    const resultCount  = document.getElementById('resultCount');
+    const totalCount   = document.getElementById('totalCount');
+    const statTotal    = document.getElementById('statTotal');
+    const heroBadge    = document.getElementById('heroBadge');
+    const yearEl       = document.getElementById('year');
+
+    /* ------------------------------------------------------------------
+       5. STATE
+    ------------------------------------------------------------------ */
+    let activeCategory = 'All';
+    let query = '';
+    let firstPaint = true;
+
+    /* ------------------------------------------------------------------
+       6. HELPERS
+    ------------------------------------------------------------------ */
+    const svg = (inner, cls) =>
+      `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+
+    const escapeHtml = (str) =>
+      String(str).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+
+    function matches(calc) {
+      if (activeCategory !== 'All' && calc.category !== activeCategory) return false;
+      const q = query.trim().toLowerCase();
+      if (!q) return true;
+      const haystack = `${calc.title} ${calc.desc} ${calc.category} ${calc.keywords || ''}`.toLowerCase();
+      // Every whitespace-separated term must match somewhere
+      return q.split(/\s+/).every((term) => haystack.includes(term));
+    }
+
+    /* ------------------------------------------------------------------
+       7. CARD TEMPLATE
+    ------------------------------------------------------------------ */
+    function cardHTML(calc, index, animate) {
+      const theme = CATEGORIES[calc.category] || CATEGORIES.Math;
+      const delay = animate ? Math.min(index, 14) * 28 : 0;
+
+      return `
+      <a href="${escapeHtml(calc.path)}"
+         class="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-300 will-change-transform hover:-translate-y-1 hover:border-indigo-300/80 hover:shadow-[0_22px_50px_-24px_rgba(79,70,229,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 dark:border-white/[0.08] dark:bg-white/[0.03] dark:shadow-none dark:hover:border-indigo-400/40 dark:hover:bg-white/[0.055] dark:focus-visible:ring-offset-[#08090d] ${animate ? 'card-in' : ''}"
+         style="${animate ? `animation-delay:${delay}ms` : ''}">
+
+        <!-- Soft hover glow -->
+        <div class="pointer-events-none absolute inset-x-0 -top-28 h-44 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+             style="background:radial-gradient(closest-side, ${theme.glow}, transparent)"></div>
+
+        <!-- Icon + badge -->
+        <div class="relative flex items-start justify-between gap-3">
+          <div class="grid h-11 w-11 shrink-0 place-items-center rounded-xl ${theme.icon} ring-1 ring-inset ${theme.ring} transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
+            ${svg(ICONS[calc.icon] || ICONS.calculator, 'h-5 w-5')}
+          </div>
+          <span class="whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset ${theme.badge}">
+            ${escapeHtml(calc.category)}
+          </span>
+        </div>
+
+        <!-- Copy -->
+        <h3 class="relative mt-4 text-[15px] font-semibold leading-snug tracking-tight text-slate-900 dark:text-white">
+          ${escapeHtml(calc.title)}
+        </h3>
+        <p class="relative mt-1.5 flex-1 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400">
+          ${escapeHtml(calc.desc)}
+        </p>
+
+        <!-- Action -->
+        <div class="relative mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-indigo-600 transition-colors dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
+          <span>Launch Calculator</span>
+          <svg class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </div>
+      </a>`;
+    }
+
+    /* ------------------------------------------------------------------
+       8. RENDER
+    ------------------------------------------------------------------ */
+    function render(animate) {
+      const list = CALCULATORS.filter(matches);
+
+      gridEl.innerHTML = list.map((c, i) => cardHTML(c, i, animate)).join('');
+
+      const hasResults = list.length > 0;
+      gridEl.classList.toggle('hidden', !hasResults);
+      emptyState.classList.toggle('hidden', hasResults);
+      emptyState.classList.toggle('flex', !hasResults);
+
+      if (!hasResults) {
+        emptyQuery.textContent = query.trim() ? `“${query.trim()}”` : 'your current filters';
+      }
+
+      resultCount.textContent = list.length;
+      firstPaint = false;
+    }
+
+    /* ------------------------------------------------------------------
+       9. SEARCH
+    ------------------------------------------------------------------ */
+    function syncSearchUI() {
+      const hasText = query.length > 0;
+      clearBtn.classList.toggle('hidden', !hasText);
+      clearBtn.classList.toggle('grid', hasText);
+      kbdHint.classList.toggle('hidden', hasText);
+      kbdHint.classList.toggle('sm:flex', !hasText);
+    }
+
+    searchEl.addEventListener('input', (e) => {
+      query = e.target.value;
+      syncSearchUI();
+      render(false); // no stagger on keystroke — keeps typing buttery smooth
+    });
+
+    clearBtn.addEventListener('click', () => {
+      query = '';
+      searchEl.value = '';
+      syncSearchUI();
+      render(true);
+      searchEl.focus();
+    });
+
+    /* Keyboard shortcuts: "/" focuses search, "Escape" clears + blurs */
+    document.addEventListener('keydown', (e) => {
+      const isTyping = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+
+      if (e.key === '/' && !isTyping) {
+        e.preventDefault();
+        searchEl.focus();
+        searchEl.select();
+      }
+
+      if (e.key === 'Escape' && document.activeElement === searchEl) {
+        if (query) {
+          query = '';
+          searchEl.value = '';
+          syncSearchUI();
+          render(false);
+        } else {
+          searchEl.blur();
+        }
+      }
+    });
+
+    /* ------------------------------------------------------------------
+       10. CATEGORY TABS
+    ------------------------------------------------------------------ */
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const cat = tab.dataset.cat;
+        if (cat === activeCategory) return;
+
+        activeCategory = cat;
+        tabs.forEach((t) => {
+          const isActive = t === tab;
+          t.classList.toggle('is-active', isActive);
+          t.setAttribute('aria-selected', String(isActive));
+        });
+
+        render(true);
+      });
+    });
+
+    /* ------------------------------------------------------------------
+       11. RESET
+    ------------------------------------------------------------------ */
+    resetBtn.addEventListener('click', () => {
+      query = '';
+      searchEl.value = '';
+      activeCategory = 'All';
+      syncSearchUI();
+      tabs.forEach((t) => {
+        const isActive = t.dataset.cat === 'All';
+        t.classList.toggle('is-active', isActive);
+        t.setAttribute('aria-selected', String(isActive));
+      });
+      render(true);
+      searchEl.focus();
+    });
+
+    /* ------------------------------------------------------------------
+       12. THEME (dark / light)
+    ------------------------------------------------------------------ */
+    const root = document.documentElement;
+    const themeButtons = document.querySelectorAll('.theme-toggle');
+
+    function applyTheme(theme) {
+      root.classList.toggle('dark', theme === 'dark');
+      try { localStorage.setItem('calchub-theme', theme); } catch (err) { /* private mode */ }
+      themeButtons.forEach((btn) => {
+        btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      });
+    }
+
+    (function initTheme() {
+      let stored = null;
+      try { stored = localStorage.getItem('calchub-theme'); } catch (err) { /* noop */ }
+
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(stored || (prefersDark ? 'dark' : 'light'));
+    })();
+
+    themeButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        applyTheme(root.classList.contains('dark') ? 'light' : 'dark');
+      });
+    });
+
+    /* Follow OS changes only if the user hasn't made an explicit choice */
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      let stored = null;
+      try { stored = localStorage.getItem('calchub-theme'); } catch (err) { /* noop */ }
+      if (!stored) applyTheme(e.matches ? 'dark' : 'light');
+    });
+
+    /* ------------------------------------------------------------------
+       13. BOOT
+    ------------------------------------------------------------------ */
+    (function boot() {
+      totalCount.textContent = CALCULATORS.length;
+      statTotal.textContent = CALCULATORS.length;
+      heroBadge.textContent = `${CALCULATORS.length}+ calculators`;
+      yearEl.textContent = new Date().getFullYear();
+
+      syncSearchUI();
+      render(true);
+    })();
+
+  })();
+  </script>
+</body>
+                  </html>
