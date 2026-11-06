@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slope Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#64748b;--border:#e5eaf2;--accent:#6366f1}
+body.dark{--bg:#0b1120;--card:#151e30;--text:#f1f5f9;--muted:#94a3b8;--border:#29364b;--accent:#818cf8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px}
+.muted{color:var(--muted)}input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:white;padding:11px 18px;border-radius:10px;font-weight:600}
+.secondary{background:var(--bg);border:1px solid var(--border);padding:10px 15px;border-radius:10px}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:15px}
+</style>
+</head>
+<body>
+<header class="border-b" style="border-color:var(--border)">
+<div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+<a href="../index.html" class="font-bold text-xl">← CalcSuite</a>
+<button id="themeToggle" class="secondary">🌙 Theme</button>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8">
+<div class="mb-7">
+<p class="text-sm muted mb-2">MATH CALCULATORS / GEOMETRY</p>
+<h1 class="text-3xl md:text-4xl font-bold">Slope Calculator</h1>
+<p class="muted mt-2">Calculate slope, rise over run, angle of inclination and distance between two points.</p>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-4">Enter Coordinates</h2>
+<div class="grid grid-cols-2 gap-3">
+<div><label class="text-sm font-semibold">X₁</label><input id="x1" type="number" step="any" value="2"></div>
+<div><label class="text-sm font-semibold">Y₁</label><input id="y1" type="number" step="any" value="3"></div>
+<div><label class="text-sm font-semibold">X₂</label><input id="x2" type="number" step="any" value="6"></div>
+<div><label class="text-sm font-semibold">Y₂</label><input id="y2" type="number" step="any" value="7"></div>
+</div>
+
+<button class="btn w-full mt-5" onclick="calculate()">Calculate Slope</button>
+<button class="secondary w-full mt-2" onclick="resetCalc()">Reset</button>
+
+<div class="mt-6 p-4 rounded-xl" style="background:var(--bg)">
+<h3 class="font-semibold mb-3">Formulas</h3>
+<p class="text-sm muted mb-2">Slope: m = (y₂ − y₁) / (x₂ − x₁)</p>
+<p class="text-sm muted mb-2">Rise = y₂ − y₁</p>
+<p class="text-sm muted mb-2">Run = x₂ − x₁</p>
+<p class="text-sm muted mb-2">Distance = √[(x₂−x₁)² + (y₂−y₁)²]</p>
+<p class="text-sm muted">Angle = tan⁻¹(m)</p>
+</div>
+</section>
+
+<section class="lg:col-span-2 space-y-5">
+<div class="grid sm:grid-cols-2 md:grid-cols-3 gap-3" id="results">
+<div class="stat"><p class="muted text-sm">Slope</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Rise</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Run</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Angle</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Distance</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Line Type</p><h2 class="text-xl font-bold mt-2">—</h2></div>
+</div>
+
+<div class="card p-5">
+<h2 class="font-bold text-lg mb-3">Coordinate Graph</h2>
+<canvas id="graph" width="700" height="380" class="w-full"></canvas>
+</div>
+
+<div class="card p-5">
+<h2 class="font-bold text-lg mb-3">Calculation Steps</h2>
+<div id="steps" class="text-sm muted">Enter coordinates to calculate the slope.</div>
+</div>
+</section>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n.toFixed(6));
+function getNum(id){
+ const v=$(id).value.trim();
+ if(v==='')throw Error('Please fill in all four coordinates.');
+ const n=Number(v);
+ if(!Number.isFinite(n))throw Error('Enter valid numeric coordinates.');
+ return n;
+}
+function calculate(){
+ try{
+  const x1=getNum('x1'),y1=getNum('y1'),x2=getNum('x2'),y2=getNum('y2');
+  const rise=y2-y1,run=x2-x1;
+  const distance=Math.hypot(run,rise);
+  let slope,angle,type;
+
+  if(run===0){slope='Undefined';angle=90;type='Vertical line';}
+  else{
+   slope=rise/run;
+   angle=((Math.atan2(rise,run)*180/Math.PI)%180+180)%180;
+   if(rise===0)type='Horizontal line';
+   else if(slope>0)type='Positive slope';
+   else type='Negative slope';
+  }
+
+  const values=[
+   ['Slope',typeof slope==='number'?fmt(slope):slope],
+   ['Rise',fmt(rise)],
+   ['Run',fmt(run)],
+   ['Angle of Inclination',fmt(angle)+'°'],
+   ['Distance',fmt(distance)],
+   ['Line Type',type]
+  ];
+  $('results').innerHTML=values.map(([k,v])=>`
+   <div class="stat"><p class="muted text-sm">${k}</p><h2 class="text-xl md:text-2xl font-bold mt-2 break-words">${v}</h2></div>`).join('');
+
+  const slopeText=typeof slope==='number'?fmt(slope):'Undefined (vertical)';
+  $('steps').innerHTML=`
+   <p class="mb-2"><b>Step 1: Calculate rise</b></p>
+   <p class="mb-4">Rise = y₂ − y₁ = ${y2} − ${y1} = ${fmt(rise)}</p>
+   <p class="mb-2"><b>Step 2: Calculate run</b></p>
+   <p class="mb-4">Run = x₂ − x₁ = ${x2} − ${x1} = ${fmt(run)}</p>
+   <p class="mb-2"><b>Step 3: Calculate slope</b></p>
+   <p class="mb-4">m = rise / run = ${slopeText}</p>
+   <p class="mb-2"><b>Step 4: Calculate distance</b></p>
+   <p class="mb-4">d = √((${run})² + (${rise})²) = ${fmt(distance)}</p>
+   <p class="mb-2"><b>Step 5: Angle</b></p>
+   <p>Angle of inclination = ${fmt(angle)}°</p>`;
+
+  drawGraph(x1,y1,x2,y2);
+ }catch(e){alert(e.message);}
+}
+
+function drawGraph(x1,y1,x2,y2){
+ const canvas=$('graph'),ctx=canvas.getContext('2d');
+ const w=canvas.width,h=canvas.height;
+ ctx.clearRect(0,0,w,h);
+
+ const minX=Math.min(x1,x2,0)-2,maxX=Math.max(x1,x2,0)+2;
+ const minY=Math.min(y1,y2,0)-2,maxY=Math.max(y1,y2,0)+2;
+ const sx=v=>40+(v-minX)/(maxX-minX)*(w-80);
+ const sy=v=>h-40-(v-minY)/(maxY-minY)*(h-80);
+
+ ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--border');
+ ctx.lineWidth=1;
+ for(let x=Math.ceil(minX);x<=maxX;x++){
+  ctx.beginPath();ctx.moveTo(sx(x),40);ctx.lineTo(sx(x),h-40);ctx.stroke();
+ }
+ for(let y=Math.ceil(minY);y<=maxY;y++){
+  ctx.beginPath();ctx.moveTo(40,sy(y));ctx.lineTo(w-40,sy(y));ctx.stroke();
+ }
+
+ ctx.strokeStyle='#94a3b8';ctx.lineWidth=2;
+ if(minX<=0&&maxX>=0){ctx.beginPath();ctx.moveTo(sx(0),40);ctx.lineTo(sx(0),h-40);ctx.stroke();}
+ if(minY<=0&&maxY>=0){ctx.beginPath();ctx.moveTo(40,sy(0));ctx.lineTo(w-40,sy(0));ctx.stroke();}
+
+ ctx.strokeStyle='#6366f1';ctx.lineWidth=3;
+ ctx.beginPath();ctx.moveTo(sx(x1),sy(y1));ctx.lineTo(sx(x2),sy(y2));ctx.stroke();
+
+ [[x1,y1,'P₁'],[x2,y2,'P₂']].forEach(([x,y,label])=>{
+  ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(sx(x),sy(y),6,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text');
+  ctx.font='bold 14px sans-serif';ctx.fillText(`${label} (${x}, ${y})`,sx(x)+10,sy(y)-10);
+ });
+}
+
+function resetCalc(){
+ ['x1','y1','x2','y2'].forEach(id=>$(id).value='');
+ $('results').innerHTML='';
+ $('steps').textContent='Enter coordinates to calculate the slope.';
+ const ctx=$('graph').getContext('2d');ctx.clearRect(0,0,700,380);
+}
+$('themeToggle').addEventListener('click',()=>{
+ document.body.classList.toggle('dark');
+ localStorage.setItem('calcsuite-theme',document.body.classList.contains('dark')?'dark':'light');
+});
+if(localStorage.getItem('calcsuite-theme')==='dark')document.body.classList.add('dark');
+calculate();
+</script>
+</body>
+</html>
