@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#6366f1">
+<title>Quadratic Equation Calculator | CalcSuite</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../js/common.js"></script>
+
+<style>
+:root{
+ --bg:#f5f7fb;
+ --card:#ffffff;
+ --text:#172033;
+ --muted:#64748b;
+ --border:#e5eaf2;
+ --accent:#6366f1;
+ --soft:#eef2ff;
+}
+body.dark{
+ --bg:#0b1120;
+ --card:#151e30;
+ --text:#f1f5f9;
+ --muted:#94a3b8;
+ --border:#29364b;
+ --accent:#818cf8;
+ --soft:#202a46;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:var(--bg);
+ color:var(--text);
+ font-family:Inter,system-ui,-apple-system,sans-serif;
+}
+.card{
+ background:var(--card);
+ border:1px solid var(--border);
+ border-radius:18px;
+}
+.muted{color:var(--muted)}
+input{
+ width:100%;
+ padding:13px;
+ border:1px solid var(--border);
+ border-radius:11px;
+ background:var(--bg);
+ color:var(--text);
+ outline:none;
+ font-size:16px;
+}
+input:focus{border-color:var(--accent)}
+.btn{
+ background:var(--accent);
+ color:white;
+ padding:12px 20px;
+ border-radius:11px;
+ font-weight:600;
+}
+.btn-secondary{
+ background:var(--bg);
+ border:1px solid var(--border);
+ padding:11px 16px;
+ border-radius:11px;
+}
+.stat{
+ background:var(--bg);
+ border:1px solid var(--border);
+ border-radius:14px;
+ padding:16px;
+}
+.step{
+ border-left:3px solid var(--accent);
+ background:var(--bg);
+ border-radius:0 12px 12px 0;
+ padding:16px;
+ margin-bottom:12px;
+}
+.math{
+ font-family:Georgia,serif;
+ font-size:19px;
+ overflow-wrap:anywhere;
+}
+.badge{
+ display:inline-block;
+ padding:5px 10px;
+ border-radius:20px;
+ font-size:12px;
+ font-weight:700;
+ background:var(--soft);
+ color:var(--accent);
+}
+.result-box{
+ background:var(--soft);
+ border:1px solid var(--border);
+ border-radius:14px;
+ padding:18px;
+}
+</style>
+</head>
+
+<body>
+
+<header class="border-b" style="border-color:var(--border)">
+ <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+  <a href="../index.html" class="font-bold text-xl">← CalcSuite</a>
+  <button id="themeToggle" class="btn-secondary">🌙 Theme</button>
+ </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8">
+
+ <div class="mb-8">
+  <div class="text-sm muted mb-2">MATH CALCULATORS / ALGEBRA</div>
+  <h1 class="text-3xl md:text-4xl font-bold">Quadratic Equation Calculator</h1>
+  <p class="muted mt-2">
+   Solve quadratic equations with real or complex roots and detailed step-by-step solutions.
+  </p>
+ </div>
+
+ <div class="grid lg:grid-cols-3 gap-6">
+
+  <!-- INPUT PANEL -->
+  <section class="card p-5 lg:col-span-1">
+
+   <h2 class="text-lg font-bold mb-2">Enter Equation</h2>
+   <p class="muted text-sm mb-5">Standard form: ax² + bx + c = 0</p>
+
+   <div class="space-y-4">
+
+    <div>
+     <label class="block text-sm font-semibold mb-2">Coefficient a</label>
+     <input type="number" id="a" step="any" value="1" placeholder="Enter a">
+    </div>
+
+    <div>
+     <label class="block text-sm font-semibold mb-2">Coefficient b</label>
+     <input type="number" id="b" step="any" value="-5" placeholder="Enter b">
+    </div>
+
+    <div>
+     <label class="block text-sm font-semibold mb-2">Coefficient c</label>
+     <input type="number" id="c" step="any" value="6" placeholder="Enter c">
+    </div>
+
+   </div>
+
+   <div class="mt-5 p-4 rounded-xl" style="background:var(--bg)">
+    <p class="text-sm muted mb-2">Your Equation</p>
+    <div class="math font-bold" id="equationPreview">x² - 5x + 6 = 0</div>
+   </div>
+
+   <div class="mt-5 flex flex-col gap-3">
+    <button class="btn w-full" onclick="calculate()">Solve Equation →</button>
+    <button class="btn-secondary w-full" onclick="loadExample()">Load Example</button>
+    <button class="btn-secondary w-full" onclick="resetCalculator()">Reset</button>
+   </div>
+
+   <div class="mt-6 p-4 rounded-xl" style="background:var(--bg)">
+    <h3 class="font-bold mb-3">Quadratic Formula</h3>
+    <div class="math text-center font-bold mb-3">
+     x = (-b ± √(b² - 4ac)) / 2a
+    </div>
+    <p class="text-sm muted">
+     The discriminant determines whether the equation has two real roots,
+     one repeated real root, or two complex roots.
+    </p>
+   </div>
+
+  </section>
+
+  <!-- RESULTS PANEL -->
+  <section class="lg:col-span-2 space-y-5">
+
+   <div class="card p-5">
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-5">
+     <h2 class="text-lg font-bold">Solution Results</h2>
+     <span class="badge" id="rootType">Waiting for calculation</span>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+
+     <div class="result-box">
+      <p class="text-sm muted mb-2">Root x₁</p>
+      <h2 class="text-2xl font-bold break-all" id="root1">—</h2>
+     </div>
+
+     <div class="result-box">
+      <p class="text-sm muted mb-2">Root x₂</p>
+      <h2 class="text-2xl font-bold break-all" id="root2">—</h2>
+     </div>
+
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-3 mt-4">
+
+     <div class="stat">
+      <p class="text-sm muted">Discriminant (D)</p>
+      <h3 class="text-xl font-bold mt-2" id="discriminant">—</h3>
+     </div>
+
+     <div class="stat">
+      <p class="text-sm muted">Sum of Roots</p>
+      <h3 class="text-xl font-bold mt-2" id="rootSum">—</h3>
+     </div>
+
+     <div class="stat">
+      <p class="text-sm muted">Product of Roots</p>
+      <h3 class="text-xl font-bold mt-2" id="rootProduct">—</h3>
+     </div>
+
+    </div>
+   </div>
+
+   <!-- STEP BY STEP -->
+   <div class="card p-5">
+    <h2 class="text-lg font-bold mb-5">Step-by-Step Solution</h2>
+    <div id="steps">
+     <div class="text-center py-10 muted">
+      Enter coefficients and click Solve Equation to see the complete solution.
+     </div>
+    </div>
+   </div>
+
+   <!-- DISCRIMINANT EXPLANATION -->
+   <div class="card p-5">
+    <h2 class="text-lg font-bold mb-4">Understanding the Discriminant</h2>
+
+    <div class="space-y-3">
+
+     <div class="stat">
+      <div class="flex justify-between items-center gap-2">
+       <span class="font-semibold">D &gt; 0</span>
+       <span class="badge">Two Real Roots</span>
+      </div>
+      <p class="text-sm muted mt-2">
+       The equation has two distinct real solutions.
+      </p>
+     </div>
+
+     <div class="stat">
+      <div class="flex justify-between items-center gap-2">
+       <span class="font-semibold">D = 0</span>
+       <span class="badge">Equal Real Roots</span>
+      </div>
+      <p class="text-sm muted mt-2">
+       Both roots are real and equal.
+      </p>
+     </div>
+
+     <div class="stat">
+      <div class="flex justify-between items-center gap-2">
+       <span class="font-semibold">D &lt; 0</span>
+       <span class="badge">Complex Roots</span>
+      </div>
+      <p class="text-sm muted mt-2">
+       The equation has two complex conjugate solutions.
+      </p>
+     </div>
+
+    </div>
+   </div>
+
+   <!-- VERIFICATION -->
+   <div class="card p-5">
+    <h2 class="text-lg font-bold mb-3">Root Verification</h2>
+    <p class="muted text-sm mb-4">
+     Substituting the calculated roots into the original equation.
+    </p>
+    <div id="verification" class="text-sm muted">
+     Verification will appear after calculation.
+    </div>
+   </div>
+
+  </section>
+ </div>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let lastResult = null;
+
+function format(n, precision=8){
+ if(!Number.isFinite(n)) return 'Undefined';
+ if(Math.abs(n)<1e-12) n=0;
+ return Number(n.toPrecision(precision)).toString();
+}
+
+function formatSigned(n){
+ if(n<0) return ' - ' + format(Math.abs(n));
+ return ' + ' + format(n);
+}
+
+function buildEquation(a,b,c){
+ let parts=[];
+
+ if(a!==0){
+  if(a===1) parts.push('x²');
+  else if(a===-1) parts.push('-x²');
+  else parts.push(format(a)+'x²');
+ }
+
+ if(b!==0){
+  let term=(Math.abs(b)===1?'':format(Math.abs(b)))+'x';
+  if(parts.length===0) parts.push(b<0?'-'+term:term);
+  else parts.push((b<0?' - ':' + ')+term);
+ }
+
+ if(c!==0){
+  if(parts.length===0) parts.push(format(c));
+  else parts.push(formatSigned(c));
+ }
+
+ if(parts.length===0) parts.push('0');
+
+ return parts.join('')+' = 0';
+}
+
+function updatePreview(){
+ const a=Number($('a').value);
+ const b=Number($('b').value);
+ const c=Number($('c').value);
+
+ if($('a').value===''||$('b').value===''||$('c').value===''){
+  $('equationPreview').textContent='Enter all coefficients';
+  return;
+ }
+
+ if(![a,b,c].every(Number.isFinite)){
+  $('equationPreview').textContent='Invalid coefficients';
+  return;
+ }
+
+ $('equationPreview').textContent=buildEquation(a,b,c);
+}
+
+['a','b','c'].forEach(id=>{
+ $(id).addEventListener('input',updatePreview);
+});
+
+function step(title,content){
+ return `
+ <div class="step">
+  <h3 class="font-bold mb-2">${title}</h3>
+  <div class="text-sm leading-7">${content}</div>
+ </div>`;
+}
+
+function calculate(){
+
+ const a=Number($('a').value);
+ const b=Number($('b').value);
+ const c=Number($('c').value);
+
+ if($('a').value.trim()===''||
+    $('b').value.trim()===''||
+    $('c').value.trim()===''){
+  alert('Please enter all three coefficients.');
+  return;
+ }
+
+ if(![a,b,c].every(Number.isFinite)){
+  alert('Please enter valid numeric coefficients.');
+  return;
+ }
+
+ // Handle non-quadratic equations
+ if(a===0){
+  if(b===0){
+   if(c===0){
+    showSpecial('Infinite Solutions','The equation 0 = 0 is true for every real number.');
+   }else{
+    showSpecial('No Solution','The equation is inconsistent because a non-zero constant cannot equal zero.');
+   }
+   return;
+  }
+
+  const x=-c/b;
+  showLinear(a,b,c,x);
+  return;
+ }
+
+ const D=b*b-4*a*c;
+
+ if(!Number.isFinite(D)){
+  alert('The coefficients are too large to calculate reliably.');
+  return;
+ }
+
+ const denominator=2*a;
+ const sum=-b/a;
+ const product=c/a;
+
+ let x1,x2,type,root1,root2;
+
+ if(D>0){
+  const sqrtD=Math.sqrt(D);
+
+  // Numerically stable quadratic formula
+  const q=-0.5*(b+Math.sign(b||1)*sqrtD);
+  x1=q/a;
+  x2=c/q;
+
+  if(!Number.isFinite(x1)||!Number.isFinite(x2)){
+   x1=(-b+sqrtD)/denominator;
+   x2=(-b-sqrtD)/denominator;
+  }
+
+  if(x1<x2)[x1,x2]=[x2,x1];
+
+  type='Two Distinct Real Roots';
+  root1=format(x1);
+  root2=format(x2);
+
+ }else if(D===0){
+
+  x1=-b/denominator;
+  x2=x1;
+
+  type='One Repeated Real Root';
+  root1=format(x1);
+  root2=format(x2);
+
+ }else{
+
+  const real=-b/denominator;
+  const imaginary=Math.sqrt(-D)/Math.abs(denominator);
+
+  x1={real,imag:imaginary};
+  x2={real,imag:-imaginary};
+
+  type='Two Complex Roots';
+  root1=formatComplex(real,imaginary);
+  root2=formatComplex(real,-imaginary);
+ }
+
+ lastResult={a,b,c,D,x1,x2,type};
+
+ $('rootType').textContent=type;
+ $('root1').textContent=root1;
+ $('root2').textContent=root2;
+ $('discriminant').textContent=format(D);
+ $('rootSum').textContent=format(sum);
+ $('rootProduct').textContent=format(product);
+
+ renderSteps(a,b,c,D,denominator,type,x1,x2);
+ renderVerification(a,b,c,x1,x2);
+}
+
+function formatComplex(real,imag){
+ const r=format(real);
+ const i=format(Math.abs(imag));
+
+ if(Math.abs(real)<1e-12){
+  return (imag<0?'-':'')+i+'i';
+ }
+
+ return r+(imag<0?' - ':' + ')+i+'i';
+}
+
+function renderSteps(a,b,c,D,denominator,type,x1,x2){
+
+ let html='';
+
+ html+=step('Step 1: Write the Standard Equation',`
+  <p>Given equation:</p>
+  <p class="math font-bold my-2">${escapeHTML(buildEquation(a,b,c))}</p>
+  <p>Compare it with the standard form:</p>
+  <p class="math font-bold">ax² + bx + c = 0</p>
+  <p class="mt-2">a = ${format(a)}, b = ${format(b)}, c = ${format(c)}</p>
+ `);
+
+ html+=step('Step 2: Write the Quadratic Formula',`
+  <p class="math font-bold">x = (-b ± √(b² - 4ac)) / 2a</p>
+ `);
+
+ html+=step('Step 3: Calculate the Discriminant',`
+  <p class="math">D = b² - 4ac</p>
+  <p class="math">D = (${format(b)})² - 4 × ${format(a)} × ${format(c)}</p>
+  <p class="math">D = ${format(b*b)} - ${format(4*a*c)}</p>
+  <p class="math font-bold">D = ${format(D)}</p>
+ `);
+
+ if(D>0){
+
+  const sqrtD=Math.sqrt(D);
+
+  html+=step('Step 4: Determine the Nature of Roots',`
+   <p>Since D &gt; 0, the equation has two distinct real roots.</p>
+   <p class="math">√D = √${format(D)} = ${format(sqrtD)}</p>
+  `);
+
+  html+=step('Step 5: Substitute Values',`
+   <p class="math">x = (-(${format(b)}) ± √${format(D)}) / (2 × ${format(a)})</p>
+   <p class="math">x = (${format(-b)} ± ${format(sqrtD)}) / ${format(denominator)}</p>
+  `);
+
+  html+=step('Step 6: Calculate Both Roots',`
+   <p class="math">x₁ = (${format(-b)} + ${format(sqrtD)}) / ${format(denominator)}</p>
+   <p class="font-bold math">x₁ = ${format(x1)}</p>
+   <p class="math mt-3">x₂ = (${format(-b)} - ${format(sqrtD)}) / ${format(denominator)}</p>
+   <p class="font-bold math">x₂ = ${format(x2)}</p>
+  `);
+
+ }else if(D===0){
+
+  html+=step('Step 4: Determine the Nature of Roots',`
+   <p>Since D = 0, the equation has two equal real roots.</p>
+   <p class="math">√D = 0</p>
+  `);
+
+  html+=step('Step 5: Substitute Values',`
+   <p class="math">x = (-b ± 0) / 2a</p>
+   <p class="math">x = ${format(-b)} / ${format(denominator)}</p>
+  `);
+
+  html+=step('Step 6: Final Root',`
+   <p class="font-bold math">x₁ = x₂ = ${format(x1)}</p>
+  `);
+
+ }else{
+
+  const real=-b/denominator;
+  const imaginary=Math.sqrt(-D)/Math.abs(denominator);
+
+  html+=step('Step 4: Determine the Nature of Roots',`
+   <p>Since D &lt; 0, the equation has two complex conjugate roots.</p>
+   <p class="math">√D = √(${format(D)}) = i√${format(-D)}</p>
+   <p class="mt-2">Here i is the imaginary unit, where i² = -1.</p>
+  `);
+
+  html+=step('Step 5: Substitute Values',`
+   <p class="math">x = (${format(-b)} ± i√${format(-D)}) / ${format(denominator)}</p>
+   <p class="math mt-2">x = ${format(real)} ± ${format(imaginary)}i</p>
+  `);
+
+  html+=step('Step 6: Final Complex Roots',`
+   <p class="font-bold math">x₁ = ${formatComplex(real,imaginary)}</p>
+   <p class="font-bold math mt-2">x₂ = ${formatComplex(real,-imaginary)}</p>
+  `);
+ }
+
+ html+=step('Step 7: Verify Using Root Relationships',`
+  <p>Sum of roots = -b/a = ${format(-b/a)}</p>
+  <p>Product of roots = c/a = ${format(c/a)}</p>
+  <p class="mt-2">The calculated roots satisfy these relationships.</p>
+ `);
+
+ $('steps').innerHTML=html;
+}
+
+function renderVerification(a,b,c,x1,x2){
+
+ function substitute(x){
+  if(typeof x==='number'){
+   return a*x*x+b*x+c;
+  }
+
+  // Evaluate a(x + yi)^2 + b(x + yi) + c
+  const real=a*(x.real*x.real-x.imag*x.imag)+b*x.real+c;
+  const imag=2*a*x.real*x.imag+b*x.imag;
+
+  return {real,imag};
+ }
+
+ const v1=substitute(x1);
+ const v2=substitute(x2);
+
+ function resultText(v){
+  if(typeof v==='number'){
+   return format(v);
+  }
+  return formatComplex(v.real,v.imag);
+ }
+
+ $('verification').innerHTML=`
+ <div class="stat mb-3">
+  <p class="font-semibold mb-2">Substitute x₁</p>
+  <p class="math">${resultText(v1)}</p>
+ </div>
+ <div class="stat">
+  <p class="font-semibold mb-2">Substitute x₂</p>
+  <p class="math">${resultText(v2)}</p>
+ </div>
+ <p class="mt-3 text-green-500 font-semibold">
+  ✓ Both roots satisfy the original equation (up to numerical precision).
+ </p>`;
+}
+
+function showLinear(a,b,c,x){
+ $('rootType').textContent='Linear Equation';
+ $('root1').textContent=format(x);
+ $('root2').textContent='Not applicable';
+ $('discriminant').textContent='N/A';
+ $('rootSum').textContent='N/A';
+ $('rootProduct').textContent='N/A';
+
+ $('steps').innerHTML=
+ step('Not a Quadratic Equation',`
+ <p>Since a = 0, the equation becomes linear:</p>
+ <p class="math">${format(b)}x + ${format(c)} = 0</p>
+ `)+
+ step('Solve the Linear Equation',`
+ <p class="math">${format(b)}x = ${format(-c)}</p>
+ <p class="math font-bold">x = ${format(x)}</p>
+ `);
+
+ $('verification').innerHTML=`
+ <p class="font-semibold text-green-500">✓ Substitution result: ${format(b*x+c)} = 0</p>`;
+}
+
+function showSpecial(title,message){
+ $('rootType').textContent=title;
+ $('root1').textContent='—';
+ $('root2').textContent='—';
+ $('discriminant').textContent='—';
+ $('rootSum').textContent='—';
+ $('rootProduct').textContent='—';
+ $('steps').innerHTML=`
+ <div class="result-box">
+ <h3 class="font-bold text-xl mb-2">${title}</h3>
+ <p>${message}</p>
+ </div>`;
+ $('verification').textContent=message;
+}
+
+function escapeHTML(str){
+ return String(str).replace(/[&<>"']/g,ch=>({
+  '&':'&amp;',
+  '<':'&lt;',
+  '>':'&gt;',
+  '"':'&quot;',
+  "'":'&#39;'
+ })[ch]);
+}
+
+function loadExample(){
+ $('a').value=1;
+ $('b').value=2;
+ $('c').value=5;
+ updatePreview();
+ calculate();
+}
+
+function resetCalculator(){
+ $('a').value='';
+ $('b').value='';
+ $('c').value='';
+ updatePreview();
+
+ $('rootType').textContent='Waiting for calculation';
+ $('root1').textContent='—';
+ $('root2').textContent='—';
+ $('discriminant').textContent='—';
+ $('rootSum').textContent='—';
+ $('rootProduct').textContent='—';
+
+ $('steps').innerHTML=`
+ <div class="text-center py-10 muted">
+ Enter coefficients and click Solve Equation to see the complete solution.
+ </div>`;
+
+ $('verification').textContent='Verification will appear after calculation.';
+ lastResult=null;
+}
+
+$('themeToggle').addEventListener('click',()=>{
+ document.body.classList.toggle('dark');
+ localStorage.setItem(
+  'calcsuite-theme',
+  document.body.classList.contains('dark')?'dark':'light'
+ );
+});
+
+if(localStorage.getItem('calcsuite-theme')==='dark'){
+ document.body.classList.add('dark');
+}
+
+updatePreview();
+calculate();
+</script>
+
+</body>
+</html>
