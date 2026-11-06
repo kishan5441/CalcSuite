@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Mortgage Calculator | CalcSuite</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="../js/common.js"></script>
+
+<style>
+
+:root {
+    --bg:#080d18;
+    --card:#111a2b;
+    --text:#f1f5f9;
+    --muted:#94a3b8;
+    --border:#263247;
+    --accent:#8b7cff;
+}
+
+body.light {
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --text:#172033;
+    --muted:#64748b;
+    --border:#e2e8f0;
+    --accent:#6555df;
+}
+
+* {
+    box-sizing:border-box;
+}
+
+body {
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial,sans-serif;
+    transition:.2s;
+}
+
+.panel {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+}
+
+.field {
+    width:100%;
+    padding:12px;
+    border-radius:9px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    color:var(--text);
+    outline:none;
+}
+
+.field:focus {
+    border-color:var(--accent);
+}
+
+.label {
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:7px;
+    font-weight:bold;
+}
+
+.stat {
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:15px;
+}
+
+.btn {
+    padding:11px 16px;
+    border-radius:9px;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.primary {
+    background:var(--accent);
+    color:white;
+}
+
+.secondary {
+    border:1px solid var(--border);
+}
+
+.muted {
+    color:var(--muted);
+}
+
+.accent {
+    color:var(--accent);
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+}
+
+td,th {
+    padding:12px;
+    border-bottom:1px solid var(--border);
+    text-align:right;
+    white-space:nowrap;
+}
+
+td:first-child,th:first-child {
+    text-align:left;
+}
+
+th {
+    color:var(--muted);
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header class="sticky top-0 z-40 border-b p-4"
+style="background:var(--card);border-color:var(--border)">
+
+<div class="max-w-7xl mx-auto flex justify-between items-center">
+
+    <div class="flex items-center gap-3">
+
+        <a href="../index.html"
+        class="btn secondary">
+
+            ← Back to Dashboard
+
+        </a>
+
+        <b>Calc<span class="accent">Suite</span></b>
+
+    </div>
+
+    <button id="themeToggle" class="btn secondary">
+        ☀️ / 🌙
+    </button>
+
+</div>
+
+</header>
+
+
+<main class="max-w-7xl mx-auto p-4 sm:p-6">
+
+    <div class="mb-8">
+
+        <p class="accent text-xs font-bold tracking-widest">
+            FINANCIAL CALCULATOR
+        </p>
+
+        <h1 class="text-3xl sm:text-4xl font-bold mt-2">
+            Mortgage Calculator
+        </h1>
+
+        <p class="muted mt-2">
+            Calculate monthly mortgage payments and understand
+            your complete home loan cost.
+        </p>
+
+    </div>
+
+
+    <div class="grid lg:grid-cols-12 gap-5">
+
+        <!-- INPUT SECTION -->
+
+        <section class="panel p-5 lg:col-span-5">
+
+            <h2 class="text-xl font-bold mb-5">
+                Loan Details
+            </h2>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+
+                <div class="sm:col-span-2">
+
+                    <label class="label">Currency</label>
+
+                    <select id="currency" class="field">
+
+                        <option value="INR">INR ₹</option>
+                        <option value="USD">USD $</option>
+                        <option value="GBP">GBP £</option>
+                        <option value="EUR">EUR €</option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="sm:col-span-2">
+
+                    <label class="label">Home Price</label>
+
+                    <input id="price" class="field"
+                    type="number" min="0" value="7500000">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Down Payment</label>
+
+                    <input id="down" class="field"
+                    type="number" min="0" value="1500000">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Down Payment (%)</label>
+
+                    <input id="downPercent" class="field"
+                    type="number" min="0" max="100" value="20">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Interest Rate (%)</label>
+
+                    <input id="rate" class="field"
+                    type="number" min="0" step=".01" value="8.5">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Loan Term (Years)</label>
+
+                    <input id="years" class="field"
+                    type="number" min="1" max="50" value="20">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Annual Property Tax</label>
+
+                    <input id="tax" class="field"
+                    type="number" min="0" value="24000">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Annual Insurance</label>
+
+                    <input id="insurance" class="field"
+                    type="number" min="0" value="12000">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Monthly PMI</label>
+
+                    <input id="pmi" class="field"
+                    type="number" min="0" value="0">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Monthly HOA</label>
+
+                    <input id="hoa" class="field"
+                    type="number" min="0" value="0">
+
+                </div>
+
+            </div>
+
+            <p id="error" class="text-red-400 text-xs mt-4"></p>
+
+            <div class="flex gap-2 mt-5">
+
+                <button onclick="calculate()"
+                class="btn primary flex-1">
+
+                    Calculate
+
+                </button>
+
+                <button onclick="resetCalculator()"
+                class="btn secondary">
+
+                    Reset
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- RESULTS -->
+
+        <section class="lg:col-span-7 space-y-5">
+
+            <div class="panel p-5">
+
+                <p class="muted text-xs font-bold">
+                    ESTIMATED MONTHLY PAYMENT
+                </p>
+
+                <h2 id="monthly"
+                class="text-4xl font-bold accent mt-3">
+
+                    ₹0
+
+                </h2>
+
+                <p id="caption" class="muted text-xs mt-2"></p>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
+
+                    <div class="stat">
+                        <p class="muted text-xs">Principal & Interest</p>
+                        <h3 id="pi" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">Property Tax / Month</p>
+                        <h3 id="taxResult" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">Insurance / Month</p>
+                        <h3 id="insuranceResult" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">PMI</p>
+                        <h3 id="pmiResult" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">HOA</p>
+                        <h3 id="hoaResult" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">Loan Principal</p>
+                        <h3 id="principal" class="font-bold mt-2">—</h3>
+                    </div>
+
+                </div>
+
+                <div class="mt-6">
+
+                    <div class="flex justify-between text-xs muted mb-2">
+                        <span>Principal vs Interest</span>
+                        <span id="split">—</span>
+                    </div>
+
+                    <div class="h-3 rounded-full flex overflow-hidden bg-slate-700">
+
+                        <div id="principalBar"
+                        style="background:#8b7cff"></div>
+
+                        <div id="interestBar"
+                        style="background:#55dfb2"></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="grid sm:grid-cols-2 gap-4">
+
+                <div class="stat">
+                    <p class="muted text-xs">Total Interest</p>
+                    <h2 id="totalInterest"
+                    class="text-2xl font-bold mt-2">—</h2>
+                </div>
+
+                <div class="stat">
+                    <p class="muted text-xs">Total Principal + Interest</p>
+                    <h2 id="totalPaid"
+                    class="text-2xl font-bold mt-2">—</h2>
+                </div>
+
+            </div>
+
+
+            <div class="panel p-5">
+
+                <h3 class="font-bold">Export Results</h3>
+
+                <p class="muted text-xs mt-1">
+                    Download your calculation and amortization schedule.
+                </p>
+
+                <div class="flex gap-3 mt-4">
+
+                    <button onclick="downloadCSV()"
+                    class="btn secondary flex-1">
+
+                        ↓ Export CSV
+
+                    </button>
+
+                    <button onclick="downloadPDF()"
+                    class="btn primary flex-1">
+
+                        ↓ Export PDF
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- AMORTIZATION -->
+
+    <section class="panel p-5 mt-5">
+
+        <h2 class="font-bold text-xl mb-2">
+            Amortization Schedule
+        </h2>
+
+        <p class="muted text-xs mb-5">
+            Complete monthly principal and interest breakdown.
+        </p>
+
+        <div class="overflow-x-auto">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Month</th>
+                        <th>Payment</th>
+                        <th>Principal</th>
+                        <th>Interest</th>
+                        <th>Balance</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="schedule"></tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script>
+
+let result = null;
+
+
+// DOWN PAYMENT SYNC
+
+price.addEventListener("input", syncDown);
+
+down.addEventListener("input", () => syncDown("amount"));
+
+downPercent.addEventListener("input", () => syncDown("percent"));
+
+
+function syncDown(source = "percent") {
+
+    const p = getNumber("price");
+
+    if (source === "amount") {
+
+        downPercent.value = p > 0
+            ? (getNumber("down") / p * 100).toFixed(2)
+            : 0;
+
+    } else {
+
+        down.value = (p * getNumber("downPercent") / 100).toFixed(2);
+
+    }
+
+}
+
+
+// MAIN CALCULATION
+
+function calculate() {
+
+    const p = getNumber("price");
+    const d = getNumber("down");
+    const rate = getNumber("rate");
+    const years = getNumber("years");
+    const months = Math.round(years * 12);
+
+    const currency = document.getElementById("currency").value;
+
+    const error = document.getElementById("error");
+
+    error.textContent = "";
+
+    if (
+        p <= 0 || d < 0 || d >= p ||
+        rate < 0 || years <= 0 || years > 50
+    ) {
+
+        error.textContent = "Please enter valid loan details.";
+
+        return;
+
+    }
+
+    const principal = p - d;
+
+    const r = rate / 1200;
+
+    const emi = r === 0
+        ? principal / months
+        : principal * r / (1 - Math.pow(1 + r, -months));
+
+    const tax = getNumber("tax") / 12;
+
+    const insurance = getNumber("insurance") / 12;
+
+    const pmi = getNumber("pmi");
+
+    const hoa = getNumber("hoa");
+
+    const total = emi + tax + insurance + pmi + hoa;
+
+    let balance = principal;
+
+    let interestTotal = 0;
+
+    let rows = [];
+
+    for (let i = 1; i <= months; i++) {
+
+        const interest = balance * r;
+
+        let principalPaid = Math.min(balance, emi - interest);
+
+        if (r === 0) {
+            principalPaid = Math.min(balance, emi);
+        }
+
+        if (i === months) {
+            principalPaid = balance;
+        }
+
+        const payment = principalPaid + interest;
+
+        balance = Math.max(0, balance - principalPaid);
+
+        interestTotal += interest;
+
+        rows.push([
+            i,
+            payment,
+            principalPaid,
+            interest,
+            balance
+        ]);
+
+    }
+
+    result = {
+        currency,
+        principal,
+        emi,
+        total,
+        tax,
+        insurance,
+        pmi,
+        hoa,
+        interestTotal,
+        rows,
+        rate,
+        years,
+        price:p,
+        down:d
+    };
+
+
+    // RESULTS
+
+    monthly.textContent = formatMoney(total, currency);
+
+    caption.textContent =
+        years + " years | " + rate + "% annual interest";
+
+    pi.textContent = formatMoney(emi, currency);
+
+    taxResult.textContent = formatMoney(tax, currency);
+
+    insuranceResult.textContent = formatMoney(insurance, currency);
+
+    pmiResult.textContent = formatMoney(pmi, currency);
+
+    hoaResult.textContent = formatMoney(hoa, currency);
+
+    document.getElementById("principal").textContent =
+        formatMoney(principal, currency);
+
+    totalInterest.textContent =
+        formatMoney(interestTotal, currency);
+
+    totalPaid.textContent =
+        formatMoney(principal + interestTotal, currency);
+
+
+    // VISUALIZATION
+
+    const pp = principal / (principal + interestTotal || 1) * 100;
+
+    principalBar.style.width = pp + "%";
+
+    interestBar.style.width = (100 - pp) + "%";
+
+    split.textContent = pp.toFixed(1) + "% Principal";
+
+
+    // SCHEDULE
+
+    schedule.innerHTML = rows.map(row => `
+
+        <tr>
+
+            <td>${row[0]}</td>
+
+            <td>${formatMoney(row[1], currency)}</td>
+
+            <td>${formatMoney(row[2], currency)}</td>
+
+            <td>${formatMoney(row[3], currency)}</td>
+
+            <td>${formatMoney(row[4], currency)}</td>
+
+        </tr>
+
+    `).join("");
+
+}
+
+
+// EXPORT CSV
+
+function downloadCSV() {
+
+    if (!result) calculate();
+
+    if (!result) return;
+
+    const x = result;
+
+    const rows = [
+
+        ["Mortgage Calculator"],
+
+        ["Home Price", x.price],
+
+        ["Down Payment", x.down],
+
+        ["Loan Principal", x.principal],
+
+        ["Interest Rate", x.rate + "%"],
+
+        ["Loan Term", x.years + " Years"],
+
+        ["Monthly Payment", x.total],
+
+        ["Total Interest", x.interestTotal],
+
+        [],
+
+        ["Month", "Payment", "Principal", "Interest", "Balance"],
+
+        ...x.rows
+
+    ];
+
+    exportCSV("mortgage-report.csv", rows);
+
+}
+
+
+// EXPORT PDF
+
+function downloadPDF() {
+
+    if (!result) calculate();
+
+    if (!result) return;
+
+    const x = result;
+
+    const summary = [
+
+        ["Home Price", formatMoney(x.price, x.currency)],
+
+        ["Down Payment", formatMoney(x.down, x.currency)],
+
+        ["Loan Principal", formatMoney(x.principal, x.currency)],
+
+        ["Interest Rate", x.rate + "%"],
+
+        ["Loan Term", x.years + " Years"],
+
+        ["Monthly Payment", formatMoney(x.total, x.currency)],
+
+        ["Total Interest", formatMoney(x.interestTotal, x.currency)]
+
+    ];
+
+    exportPDF(
+        "mortgage-report.pdf",
+        "Mortgage Calculator Report",
+        summary,
+        ["Month", "Payment", "Principal", "Interest", "Balance"],
+        x.rows
+    );
+
+}
+
+
+// RESET
+
+function resetCalculator() {
+
+    price.value = 7500000;
+    down.value = 1500000;
+    downPercent.value = 20;
+    rate.value = 8.5;
+    years.value = 20;
+    tax.value = 24000;
+    insurance.value = 12000;
+    pmi.value = 0;
+    hoa.value = 0;
+
+    currency.value = "INR";
+
+    calculate();
+
+}
+
+
+// INITIALIZE
+
+calculate();
+
+</script>
+
+</body>
+</html>
