@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ideal Weight Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#0d9488}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px}
+input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;color:var(--muted)}
+.btn{padding:11px 16px;border-radius:10px;font-weight:700;background:var(--accent);color:white}
+.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.muted{color:var(--muted)}.value{font-size:30px;font-weight:800;color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="p-4 flex justify-between max-w-5xl mx-auto"><a href="../index.html" class="font-bold text-teal-600">← CalcSuite</a><button class="btn secondary" onclick="toggleTheme()">☼ Theme</button></header>
+<main class="max-w-5xl mx-auto p-4 space-y-5">
+<section><p class="text-sm font-bold text-teal-600">HEALTH & FITNESS</p><h1 class="text-3xl font-extrabold mt-1">Ideal Weight Calculator</h1><p class="muted mt-2">Compare BMI-based healthy weight range with Robinson and Devine formula estimates.</p></section>
+<section class="card">
+<h2 class="font-bold text-lg mb-4">Your details</h2>
+<div class="grid sm:grid-cols-2 gap-4">
+<div><label>Sex used by formula</label><select id="sex"><option value="male">Male</option><option value="female">Female</option></select></div>
+<div><label>Height unit</label><select id="unit" onchange="updateUnit()"><option value="cm">Centimeters</option><option value="in">Feet / Inches</option></select></div>
+<div id="cmBox"><label>Height (cm)</label><input id="heightCm" type="number" value="170" min="1" step=".1"></div>
+<div id="imperialBox" class="hidden grid grid-cols-2 gap-2"><div><label>Feet</label><input id="feet" type="number" min="0" value="5"></div><div><label>Inches</label><input id="inches" type="number" min="0" max="11.99" value="7"></div></div>
+</div>
+<button class="btn w-full mt-5" onclick="calculate()">Calculate Ideal Weight</button>
+</section>
+<section id="result" class="card hidden space-y-4">
+<h2 class="font-bold text-lg">Your estimated weight references</h2>
+<div class="grid sm:grid-cols-2 gap-3">
+<div class="p-4 rounded-xl" style="background:var(--bg)"><p class="muted text-sm">BMI healthy range</p><div class="value" id="bmiRange">--</div><p class="muted text-xs mt-1">BMI 18.5–24.9</p></div>
+<div class="p-4 rounded-xl" style="background:var(--bg)"><p class="muted text-sm">Robinson formula</p><div class="value" id="robinson">--</div><p class="muted text-xs mt-1">Formula-based estimate</p></div>
+<div class="p-4 rounded-xl" style="background:var(--bg)"><p class="muted text-sm">Devine formula</p><div class="value" id="devine">--</div><p class="muted text-xs mt-1">Formula-based estimate</p></div>
+<div class="p-4 rounded-xl" style="background:var(--bg)"><p class="muted text-sm">Height</p><div class="value" id="heightOut">--</div></div>
+</div>
+<div class="text-sm muted">Robinson and Devine are historical formula estimates, not individualized health targets. BMI-based ranges are screening references and may not suit every person.</div>
+<div class="flex gap-2 flex-wrap"><button class="btn" onclick="downloadCSV()">Download CSV</button><button class="btn secondary" onclick="downloadPDF()">Download PDF</button></div>
+</section>
+<div class="card text-sm muted"><b>Note:</b> These estimates are not a diagnosis or a substitute for professional advice. BMI does not directly measure body fat or account for every difference in body composition.</div>
+</main>
+<script>
+let report=null;
+function toggleTheme(){document.documentElement.classList.toggle('dark');localStorage.setItem('calcsuite-theme',document.documentElement.classList.contains('dark')?'dark':'light')}
+if(localStorage.getItem('calcsuite-theme')==='dark')document.documentElement.classList.add('dark');
+function updateUnit(){const imp=unit.value==='in';cmBox.classList.toggle('hidden',imp);imperialBox.classList.toggle('hidden',!imp)}
+function calculate(){
+ let h=unit.value==='cm'?+heightCm.value:(+feet.value*12 + +inches.value)*2.54;
+ if(!(h>0)||!Number.isFinite(h)){alert('Enter a valid height.');return}
+ const inchesTotal=h/2.54,over=inchesTotal-60,s=sex.value;
+ const bmiMin=18.5*(h/100)**2,bmiMax=24.9*(h/100)**2;
+ const rob=s==='male'?52+1.9*over:49+1.7*over;
+ const dev=s==='male'?50+2.3*over:45.5+2.3*over;
+ if(rob<=0||dev<=0){alert('Height is outside the supported range for these formulas.');return}
+ const fmt=v=>v.toFixed(1)+' kg';
+ report={sex:s,heightCm:h,bmiHealthyMinimumKg:bmiMin,bmiHealthyMaximumKg:bmiMax,robinsonKg:rob,devineKg:dev};
+ bmiRange.textContent=fmt(bmiMin)+' – '+fmt(bmiMax);
+ robinson.textContent=fmt(rob);devine.textContent=fmt(dev);heightOut.textContent=h.toFixed(1)+' cm';
+ result.classList.remove('hidden');
+}
+function downloadCSV(){
+ if(!report)return;const csv=Object.entries(report).map(x=>x.join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['Metric,Value\n'+csv],{type:'text/csv'}));a.download='ideal-weight.csv';a.click();URL.revokeObjectURL(a.href);
+}
+function downloadPDF(){
+ if(!report)return;const {jsPDF}=window.jspdf;const d=new jsPDF();d.setFontSize(20);d.text('CalcSuite - Ideal Weight Report',15,20);d.setFontSize(12);let y=38;
+ Object.entries(report).forEach(([k,v])=>{d.text(k+': '+(typeof v==='number'?v.toFixed(2):v),15,y);y+=10});d.save('ideal-weight-report.pdf');
+}
+</script>
+</body>
+</html>
