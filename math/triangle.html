@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triangle Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#64748b;--border:#e5eaf2;--accent:#6366f1}
+body.dark{--bg:#0b1120;--card:#151e30;--text:#f1f5f9;--muted:#94a3b8;--border:#29364b;--accent:#818cf8}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px}
+.muted{color:var(--muted)}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px;width:100%;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:white;padding:11px 18px;border-radius:10px;font-weight:600}
+.btn-secondary{background:var(--bg);border:1px solid var(--border);padding:10px 15px;border-radius:10px}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:15px}
+.field{display:none}
+.field.active{display:block}
+</style>
+</head>
+<body>
+<header class="border-b" style="border-color:var(--border)">
+<div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+<a href="../index.html" class="font-bold text-xl">← CalcSuite</a>
+<button id="themeToggle" class="btn-secondary">🌙 Theme</button>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8">
+<div class="mb-7">
+<div class="text-sm muted mb-2">MATH CALCULATORS / GEOMETRY</div>
+<h1 class="text-3xl md:text-4xl font-bold">Triangle Calculator</h1>
+<p class="muted mt-2">Calculate triangle area, perimeter, sides, angles, height and more.</p>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+<section class="card p-5">
+<h2 class="text-lg font-bold mb-4">Triangle Inputs</h2>
+
+<label class="text-sm font-semibold block mb-2">Calculation Method</label>
+<select id="method" onchange="changeMethod()">
+<option value="sss">Three Sides (SSS)</option>
+<option value="sas">Two Sides + Included Angle (SAS)</option>
+<option value="asa">Two Angles + One Side (ASA/AAS)</option>
+<option value="base">Base + Height</option>
+<option value="right">Right Triangle (Two Sides)</option>
+</select>
+
+<div id="sss" class="field active space-y-3 mt-5">
+<div><label class="text-sm">Side A</label><input id="a" type="number" min="0" step="any" placeholder="Enter side A"></div>
+<div><label class="text-sm">Side B</label><input id="b" type="number" min="0" step="any" placeholder="Enter side B"></div>
+<div><label class="text-sm">Side C</label><input id="c" type="number" min="0" step="any" placeholder="Enter side C"></div>
+</div>
+
+<div id="sas" class="field space-y-3 mt-5">
+<div><label class="text-sm">Side A</label><input id="sa" type="number" min="0" step="any" placeholder="Side A"></div>
+<div><label class="text-sm">Side B</label><input id="sb" type="number" min="0" step="any" placeholder="Side B"></div>
+<div><label class="text-sm">Included Angle (degrees)</label><input id="angleC" type="number" min="0" max="180" step="any" placeholder="Angle between A and B"></div>
+</div>
+
+<div id="asa" class="field space-y-3 mt-5">
+<div><label class="text-sm">Angle A (degrees)</label><input id="aa" type="number" min="0" max="180" step="any" placeholder="Angle A"></div>
+<div><label class="text-sm">Angle B (degrees)</label><input id="ab" type="number" min="0" max="180" step="any" placeholder="Angle B"></div>
+<div><label class="text-sm">Known Side (opposite Angle C)</label><input id="knownSide" type="number" min="0" step="any" placeholder="Side C"></div>
+</div>
+
+<div id="base" class="field space-y-3 mt-5">
+<div><label class="text-sm">Base</label><input id="baseVal" type="number" min="0" step="any" placeholder="Enter base"></div>
+<div><label class="text-sm">Height</label><input id="heightVal" type="number" min="0" step="any" placeholder="Enter perpendicular height"></div>
+</div>
+
+<div id="right" class="field space-y-3 mt-5">
+<div><label class="text-sm">Leg A</label><input id="ra" type="number" min="0" step="any" placeholder="Enter first leg"></div>
+<div><label class="text-sm">Leg B</label><input id="rb" type="number" min="0" step="any" placeholder="Enter second leg"></div>
+</div>
+
+<div class="mt-5 flex gap-2">
+<button class="btn flex-1" onclick="calculate()">Calculate</button>
+<button class="btn-secondary" onclick="resetCalc()">Reset</button>
+</div>
+
+<div class="mt-6 p-4 rounded-xl" style="background:var(--bg)">
+<h3 class="font-semibold mb-2">Important Formulas</h3>
+<p class="text-sm muted">Area = ½ × Base × Height</p>
+<p class="text-sm muted mt-1">Perimeter = A + B + C</p>
+<p class="text-sm muted mt-1">Heron's Formula = √[s(s−a)(s−b)(s−c)]</p>
+<p class="text-sm muted mt-1">Angle Sum = 180°</p>
+</div>
+</section>
+
+<section class="lg:col-span-2 space-y-5">
+<div class="card p-5">
+<h2 class="text-lg font-bold mb-4">Triangle Visualization</h2>
+<div class="flex justify-center items-center min-h-64">
+<svg id="triangleSvg" viewBox="0 0 500 300" class="w-full max-w-xl" style="height:280px">
+<polygon points="80,250 420,250 250,40" fill="#818cf8" fill-opacity=".18" stroke="#818cf8" stroke-width="3"/>
+<text x="65" y="270" fill="currentColor" font-size="15">A</text>
+<text x="425" y="270" fill="currentColor" font-size="15">B</text>
+<text x="250" y="28" fill="currentColor" font-size="15">C</text>
+</svg>
+</div>
+<p id="triangleMessage" class="text-center muted text-sm">Enter triangle measurements to visualize your triangle.</p>
+</div>
+
+<div id="resultGrid" class="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+<div class="stat"><p class="muted text-sm">Area</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Perimeter</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Type</p><h2 class="text-xl font-bold mt-2">—</h2></div>
+</div>
+
+<div class="card p-5">
+<h2 class="text-lg font-bold mb-4">Triangle Measurements</h2>
+<div class="grid sm:grid-cols-2 gap-4" id="measurements">
+<div><p class="muted text-sm">Side A</p><h3 class="font-bold text-lg">—</h3></div>
+<div><p class="muted text-sm">Side B</p><h3 class="font-bold text-lg">—</h3></div>
+<div><p class="muted text-sm">Side C</p><h3 class="font-bold text-lg">—</h3></div>
+<div><p class="muted text-sm">Angle A</p><h3 class="font-bold text-lg">—</h3></div>
+<div><p class="muted text-sm">Angle B</p><h3 class="font-bold text-lg">—</h3></div>
+<div><p class="muted text-sm">Angle C</p><h3 class="font-bold text-lg">—</h3></div>
+<div><p class="muted text-sm">Height from A</p><h3 class="font-bold text-lg">—</h3></div>
+<div><p class="muted text-sm">Semi-perimeter</p><h3 class="font-bold text-lg">—</h3></div>
+</div>
+</div>
+
+<div class="card p-5">
+<h2 class="font-bold mb-2">Calculation Details</h2>
+<p id="explanation" class="muted text-sm">Your calculation steps will appear here.</p>
+</div>
+</section>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const rad=d=>d*Math.PI/180;
+const deg=r=>r*180/Math.PI;
+const fmt=n=>Number(n.toFixed(6));
+
+function num(id){
+ const v=$(id).value.trim();
+ if(v==='')throw new Error('Please fill in all required fields.');
+ const n=Number(v);
+ if(!Number.isFinite(n)||n<=0)throw new Error('All measurements must be positive numbers.');
+ return n;
+}
+
+function changeMethod(){
+ document.querySelectorAll('.field').forEach(x=>x.classList.remove('active'));
+ $( $('method').value ).classList.add('active');
+}
+
+function validateTriangle(a,b,c){
+ if(a+b<=c||a+c<=b||b+c<=a)throw new Error('These sides cannot form a valid triangle. The sum of any two sides must be greater than the third.');
+}
+
+function fromSides(a,b,c){
+ validateTriangle(a,b,c);
+ const A=deg(Math.acos(Math.max(-1,Math.min(1,(b*b+c*c-a*a)/(2*b*c)))));
+ const B=deg(Math.acos(Math.max(-1,Math.min(1,(a*a+c*c-b*b)/(2*a*c)))));
+ const C=180-A-B;
+ const s=(a+b+c)/2;
+ const area=Math.sqrt(Math.max(0,s*(s-a)*(s-b)*(s-c)));
+ return {a,b,c,A,B,C,s,area};
+}
+
+function calculate(){
+ try{
+  const method=$('method').value;
+  let t,steps='';
+
+  if(method==='sss'){
+   const a=num('a'),b=num('b'),c=num('c');
+   t=fromSides(a,b,c);
+   steps=`Using Heron's formula: s = (${a} + ${b} + ${c}) / 2 = ${fmt(t.s)}. Area = √[s(s−a)(s−b)(s−c)] = ${fmt(t.area)}.`;
+  }
+
+  if(method==='sas'){
+   const a=num('sa'),b=num('sb'),C=num('angleC');
+   if(C>=180)throw new Error('Included angle must be less than 180 degrees.');
+   const c=Math.sqrt(a*a+b*b-2*a*b*Math.cos(rad(C)));
+   t=fromSides(c,a,b);
+   t={...t,a,b,c,A:180-C-t.B,B:180-C-t.A,C};
+   t.A=deg(Math.acos(Math.max(-1,Math.min(1,(b*b+c*c-a*a)/(2*b*c)))));
+   t.B=180-C-t.A;
+   steps=`Using the cosine rule: c² = a² + b² − 2ab cos(C). The third side is ${fmt(c)}.`;
+  }
+
+  if(method==='asa'){
+   const A=num('aa'),B=num('ab'),c=num('knownSide');
+   const C=180-A-B;
+   if(C<=0)throw new Error('The sum of the two angles must be less than 180 degrees.');
+   const a=c*Math.sin(rad(A))/Math.sin(rad(C));
+   const b=c*Math.sin(rad(B))/Math.sin(rad(C));
+   t=fromSides(a,b,c);
+   t={...t,A,B,C};
+   steps=`Using the sine rule: a/sin(A) = b/sin(B) = c/sin(C). The remaining angle C is ${fmt(C)}°.`;
+  }
+
+  if(method==='base'){
+   const base=num('baseVal'),height=num('heightVal');
+   const a=base,b=Math.hypot(base/2,height),c=b;
+   t=fromSides(a,b,c);
+   const A=deg(Math.atan2(height,base/2));
+   t={...t,a,b,c,A,B:A,C:180-2*A};
+   t.area=base*height/2;
+   steps=`Area = ½ × base × height = ½ × ${base} × ${height} = ${fmt(t.area)}.`;
+  }
+
+  if(method==='right'){
+   const a=num('ra'),b=num('rb');
+   const c=Math.hypot(a,b);
+   t=fromSides(a,b,c);
+   const A=deg(Math.atan2(a,b));
+   const B=90-A;
+   t={...t,a,b,c,A,B,C:90};
+   t.area=a*b/2;
+   steps=`Using Pythagoras: c = √(a² + b²) = ${fmt(c)}. Area = ½ × ${a} × ${b} = ${fmt(t.area)}.`;
+  }
+
+  render(t,steps);
+ }catch(e){
+  alert(e.message);
+ }
+}
+
+function render(t,steps){
+ const {a,b,c,A,B,C,s,area}=t;
+ const perimeter=a+b+c;
+ const type=(Math.abs(a-b)<1e-7&&Math.abs(b-c)<1e-7)?'Equilateral':
+ (Math.abs(a-b)<1e-7||Math.abs(b-c)<1e-7||Math.abs(a-c)<1e-7)?'Isosceles':'Scalene';
+ const angleType=Math.abs(Math.max(A,B,C)-90)<1e-6?'Right':
+ Math.max(A,B,C)>90?'Obtuse':'Acute';
+
+ const stats=[
+  ['Area',fmt(area)],
+  ['Perimeter',fmt(perimeter)],
+  ['Triangle Type',type],
+  ['Angle Type',angleType],
+  ['Semi-perimeter',fmt(s)],
+  ['Total Angles','180°']
+ ];
+ $('resultGrid').innerHTML=stats.map(([k,v])=>`
+ <div class="stat"><p class="muted text-sm">${k}</p><h2 class="text-xl md:text-2xl font-bold mt-2">${v}</h2></div>`).join('');
+
+ const height=2*area/a;
+ const vals=[
+  ['Side A',a],['Side B',b],['Side C',c],
+  ['Angle A',A.toFixed(4)+'°'],['Angle B',B.toFixed(4)+'°'],
+  ['Angle C',C.toFixed(4)+'°'],['Height from A',height],['Semi-perimeter',s]
+ ];
+ $('measurements').innerHTML=vals.map(([k,v])=>`
+ <div><p class="muted text-sm">${k}</p><h3 class="font-bold text-lg">${typeof v==='number'?fmt(v):v}</h3></div>`).join('');
+
+ $('explanation').textContent=steps;
+ drawTriangle(a,b,c);
+ $('triangleMessage').textContent=`${type} ${angleType.toLowerCase()} triangle`;
+}
+
+function drawTriangle(a,b,c){
+ const scale=220/Math.max(a,b,c);
+ const A=[65,250],B=[65+c*scale,250];
+ const x=(b*b+c*c-a*a)/(2*c);
+ const y=Math.sqrt(Math.max(0,b*b-x*x));
+ const C=[65+x*scale,250-y*scale];
+ const points=[A,B,C].map(p=>p.map(v=>v.toFixed(2)).join(',')).join(' ');
+ $('triangleSvg').innerHTML=`
+ <polygon points="${points}" fill="#818cf8" fill-opacity=".2" stroke="#818cf8" stroke-width="3"/>
+ <text x="${A[0]-15}" y="${A[1]+20}" fill="currentColor" font-size="15">A</text>
+ <text x="${B[0]+8}" y="${B[1]+20}" fill="currentColor" font-size="15">B</text>
+ <text x="${C[0]}" y="${C[1]-12}" fill="currentColor" font-size="15">C</text>
+ <text x="${(A[0]+B[0])/2}" y="${A[1]+28}" fill="currentColor" font-size="12" text-anchor="middle">${fmt(c)}</text>
+ <text x="${(A[0]+C[0])/2-20}" y="${(A[1]+C[1])/2}" fill="currentColor" font-size="12">${fmt(b)}</text>
+ <text x="${(B[0]+C[0])/2+10}" y="${(B[1]+C[1])/2}" fill="currentColor" font-size="12">${fmt(a)}</text>`;
+}
+
+function resetCalc(){
+ document.querySelectorAll('input').forEach(i=>i.value='');
+ $('resultGrid').innerHTML='';
+ $('explanation').textContent='Your calculation steps will appear here.';
+ $('measurements').innerHTML='';
+ $('triangleMessage').textContent='Enter triangle measurements to visualize your triangle.';
+ $('triangleSvg').innerHTML='';
+}
+
+$('themeToggle').addEventListener('click',()=>{
+ document.body.classList.toggle('dark');
+ localStorage.setItem('calcsuite-theme',document.body.classList.contains('dark')?'dark':'light');
+});
+if(localStorage.getItem('calcsuite-theme')==='dark')document.body.classList.add('dark');
+</script>
+</body>
+</html>
