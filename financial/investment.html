@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investment Calculator — CalcHub</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="../js/common.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif}
+.card{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:22px}
+.dark .card{background:#11131c;border-color:#ffffff12}
+.field{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;outline:none}
+.dark .field{border-color:#ffffff20;color:white}
+.field:focus{border-color:#6366f1;box-shadow:0 0 0 3px #6366f120}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+.btn{padding:11px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.primary{background:#4f46e5;color:white}
+.secondary{border:1px solid #cbd5e1}
+.dark .secondary{border-color:#ffffff25}
+.result{background:#eef2ff;border-radius:14px;padding:18px}
+.dark .result{background:#6366f115}
+.metric{padding:14px;border-radius:12px;background:#f8fafc}
+.dark .metric{background:#ffffff08}
+table{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+th,td{padding:11px;text-align:right;border-bottom:1px solid #e2e8f0}
+th:first-child,td:first-child{text-align:left}
+.dark th,.dark td{border-color:#ffffff15}
+</style>
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#08090d] dark:text-white">
+
+<header class="border-b border-slate-200 dark:border-white/10">
+<div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+<div>
+<h1 class="text-xl font-extrabold">📈 Investment Calculator</h1>
+<p class="text-xs text-slate-500 mt-1">Project your investment growth and returns</p>
+</div>
+<div class="flex gap-2">
+<a href="../index.html" class="btn secondary">← Dashboard</a>
+<button class="btn secondary" onclick="toggleTheme()">◐</button>
+</div>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4 py-8">
+
+<div class="grid lg:grid-cols-2 gap-6">
+
+<section class="card">
+<h2 class="text-lg font-bold mb-5">Investment Details</h2>
+
+<div class="space-y-4">
+
+<div>
+<label>Currency</label>
+<select id="currency" class="field" onchange="calculate()">
+<option value="INR">INR — ₹</option>
+<option value="USD">USD — $</option>
+<option value="EUR">EUR — €</option>
+<option value="GBP">GBP — £</option>
+</select>
+</div>
+
+<div>
+<label>Initial Investment</label>
+<input id="initial" class="field" type="number" min="0" value="100000" oninput="calculate()">
+</div>
+
+<div>
+<label>Monthly Investment</label>
+<input id="monthly" class="field" type="number" min="0" value="10000" oninput="calculate()">
+</div>
+
+<div>
+<label>Expected Annual Return (%)</label>
+<input id="rate" class="field" type="number" min="0" max="100" step="0.1" value="12" oninput="calculate()">
+</div>
+
+<div>
+<label>Investment Duration (Years)</label>
+<input id="years" class="field" type="number" min="1" max="100" value="15" oninput="calculate()">
+</div>
+
+<div>
+<label>Annual SIP Increase (%)</label>
+<input id="stepup" class="field" type="number" min="0" max="100" value="0" oninput="calculate()">
+<p class="text-xs text-slate-500 mt-2">Increase your monthly investment every year.</p>
+</div>
+
+</div>
+
+<div id="error" class="hidden mt-4 rounded-lg bg-red-50 text-red-600 p-3 text-sm"></div>
+
+<div class="flex gap-2 mt-6">
+<button class="btn primary flex-1" onclick="calculate()">Calculate Returns</button>
+<button class="btn secondary" onclick="resetCalculator()">Reset</button>
+</div>
+</section>
+
+<section class="card">
+<h2 class="text-lg font-bold mb-5">Investment Summary</h2>
+
+<div class="result">
+<p class="text-sm text-indigo-700 dark:text-indigo-300">Estimated Future Value</p>
+<h2 id="future" class="text-3xl font-extrabold mt-2">₹0</h2>
+<p class="text-xs text-slate-500 mt-2">Projected investment value</p>
+</div>
+
+<div class="grid grid-cols-2 gap-3 mt-4">
+<div class="metric">
+<p class="text-xs text-slate-500">Total Invested</p>
+<h3 id="invested" class="font-bold mt-2">₹0</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Estimated Returns</p>
+<h3 id="returns" class="font-bold mt-2">₹0</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Investment Growth</p>
+<h3 id="growth" class="font-bold mt-2">0%</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Monthly Contribution</p>
+<h3 id="lastMonthly" class="font-bold mt-2">₹0</h3>
+</div>
+</div>
+
+<div class="mt-6">
+<h3 class="text-sm font-bold mb-3">Invested vs Returns</h3>
+
+<div class="h-3 flex overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
+<div id="investedBar" class="bg-indigo-500"></div>
+<div id="returnsBar" class="bg-emerald-500"></div>
+</div>
+
+<div class="flex justify-between text-xs text-slate-500 mt-2">
+<span>Invested</span>
+<span>Returns</span>
+</div>
+</div>
+
+</section>
+</div>
+
+<section class="card mt-6">
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+<h2 class="text-lg font-bold">Yearly Investment Growth</h2>
+<div class="flex gap-2">
+<button class="btn secondary" onclick="downloadCSV()">Export CSV</button>
+<button class="btn primary" onclick="downloadPDF()">Export PDF</button>
+</div>
+</div>
+
+<div class="overflow-x-auto">
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Invested Amount</th>
+<th>Investment Returns</th>
+<th>Portfolio Value</th>
+</tr>
+</thead>
+<tbody id="schedule"></tbody>
+</table>
+</div>
+</section>
+
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const val=id=>Number($(id).value);
+
+let scheduleData=[];
+let summaryData=[];
+
+function toggleTheme(){
+document.documentElement.classList.toggle('dark');
+}
+
+function money(n){
+return new Intl.NumberFormat('en-IN',{
+style:'currency',
+currency:$('currency').value,
+maximumFractionDigits:2
+}).format(n);
+}
+
+function calculate(){
+
+const initial=val('initial');
+const monthly=val('monthly');
+const rate=val('rate');
+const years=val('years');
+const stepup=val('stepup');
+
+const error=$('error');
+
+if(![initial,monthly,rate,years,stepup].every(Number.isFinite)||
+initial<0||monthly<0||rate<0||rate>100||
+years<1||years>100||stepup<0||stepup>100){
+
+error.textContent='Enter valid values. Investment duration must be between 1 and 100 years.';
+error.classList.remove('hidden');
+return;
+}
+
+error.classList.add('hidden');
+
+const monthlyRate=rate/1200;
+const totalMonths=years*12;
+
+let balance=initial;
+let totalInvested=initial;
+let contribution=monthly;
+
+let rows=[];
+let yearlyInvested=initial;
+let yearStart=initial;
+
+for(let month=1;month<=totalMonths;month++){
+
+const interest=balance*monthlyRate;
+balance+=interest;
+
+balance+=contribution;
+totalInvested+=contribution;
+yearlyInvested+=contribution;
+
+if(month%12===0 || month===totalMonths){
+
+const year=Math.ceil(month/12);
+const yearlyReturns=balance-yearStart-(yearlyInvested-yearStart);
+
+rows.push([
+year,
+yearlyInvested.toFixed(2),
+(balance-yearlyInvested).toFixed(2),
+balance.toFixed(2)
+]);
+
+yearStart=balance;
+}
+
+if(month%12===0){
+contribution*=1+stepup/100;
+}
+}
+
+const returns=balance-totalInvested;
+const growth=totalInvested>0?returns/totalInvested*100:0;
+
+$('future').textContent=money(balance);
+$('invested').textContent=money(totalInvested);
+$('returns').textContent=money(returns);
+$('growth').textContent=growth.toFixed(2)+'%';
+$('lastMonthly').textContent=money(contribution/(1+stepup/100));
+
+const investedShare=totalInvested/balance*100;
+const returnShare=returns/balance*100;
+
+$('investedBar').style.width=investedShare+'%';
+$('returnsBar').style.width=returnShare+'%';
+
+scheduleData=rows;
+
+$('schedule').innerHTML=rows.map(row=>
+`<tr>${row.map(x=>`<td>${x}</td>`).join('')}</tr>`
+).join('');
+
+summaryData=[
+['Initial Investment',initial],
+['Starting Monthly Investment',monthly],
+['Expected Annual Return',rate+'%'],
+['Investment Duration',years+' years'],
+['Annual SIP Increase',stepup+'%'],
+['Total Invested',totalInvested],
+['Estimated Returns',returns],
+['Future Value',balance],
+['Growth',growth.toFixed(2)+'%']
+];
+}
+
+function downloadCSV(){
+exportCSV('investment-growth.csv',[
+['Year','Invested Amount','Investment Returns','Portfolio Value'],
+...scheduleData
+]);
+}
+
+function downloadPDF(){
+exportPDF(
+'investment-report.pdf',
+'Investment Calculator Report',
+summaryData,
+['Year','Invested Amount','Investment Returns','Portfolio Value'],
+scheduleData
+);
+}
+
+function resetCalculator(){
+$('initial').value=100000;
+$('monthly').value=10000;
+$('rate').value=12;
+$('years').value=15;
+$('stepup').value=0;
+calculate();
+}
+
+calculate();
+</script>
+</body>
+</html>
