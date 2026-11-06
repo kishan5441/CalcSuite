@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4×4 Matrix Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#64748b;--border:#e5eaf2;--accent:#6366f1}
+body.dark{--bg:#0b1120;--card:#151e30;--text:#f1f5f9;--muted:#94a3b8;--border:#29364b;--accent:#818cf8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px}
+.muted{color:var(--muted)}
+input{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 5px;width:100%;min-width:0;text-align:center;outline:none}
+input:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:white;padding:11px 17px;border-radius:10px;font-weight:600}
+.secondary{background:var(--bg);border:1px solid var(--border);padding:10px 14px;border-radius:10px}
+.matrix{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;max-width:420px}
+.matrix input{font-size:14px}
+.result-cell{background:var(--bg);border:1px solid var(--border);padding:11px 3px;border-radius:8px;text-align:center;font-weight:600;overflow-wrap:anywhere}
+.tab{padding:10px 15px;border-radius:9px;font-weight:600;border:1px solid var(--border);background:var(--bg)}
+.tab.active{background:var(--accent);color:white;border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="border-b" style="border-color:var(--border)">
+<div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+<a href="../index.html" class="font-bold text-xl">← CalcSuite</a>
+<button id="themeToggle" class="secondary">🌙 Theme</button>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8">
+<div class="mb-7">
+<p class="text-sm muted mb-2">MATH CALCULATORS / LINEAR ALGEBRA</p>
+<h1 class="text-3xl md:text-4xl font-bold">4×4 Matrix Calculator</h1>
+<p class="muted mt-2">Multiply matrices, calculate determinants and find matrix inverses.</p>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-6">
+<button class="tab active" onclick="setMode('multiply',this)">Multiply</button>
+<button class="tab" onclick="setMode('determinant',this)">Determinant</button>
+<button class="tab" onclick="setMode('inverse',this)">Inverse</button>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-6">
+<section class="card p-5">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-bold text-lg">Matrix A</h2>
+<button class="secondary text-sm" onclick="fillRandom('A')">Random Values</button>
+</div>
+<div id="matrixA" class="matrix"></div>
+
+<div id="matrixBSection" class="mt-8">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-bold text-lg">Matrix B</h2>
+<button class="secondary text-sm" onclick="fillRandom('B')">Random Values</button>
+</div>
+<div id="matrixB" class="matrix"></div>
+</div>
+
+<div class="flex flex-wrap gap-2 mt-6">
+<button class="btn flex-1" onclick="calculate()">Calculate</button>
+<button class="secondary" onclick="clearMatrices()">Clear</button>
+<button class="secondary" onclick="loadExample()">Example</button>
+</div>
+</section>
+
+<section class="card p-5">
+<div class="flex justify-between items-center mb-5">
+<h2 class="font-bold text-lg">Result</h2>
+<button class="secondary text-sm" onclick="copyResult()">Copy</button>
+</div>
+
+<div id="resultArea" class="min-h-64 flex items-center justify-center text-center muted">
+Enter matrix values and click Calculate.
+</div>
+
+<div id="resultInfo" class="mt-5 text-sm muted"></div>
+</section>
+</div>
+
+<div class="card p-5 mt-6">
+<h2 class="font-bold text-lg mb-3">Matrix Calculator Guide</h2>
+<div class="grid md:grid-cols-3 gap-4 text-sm muted">
+<div><strong class="block mb-1" style="color:var(--text)">Matrix Multiplication</strong>Each element of the result is calculated by multiplying corresponding row and column elements and adding them.</div>
+<div><strong class="block mb-1" style="color:var(--text)">Determinant</strong>The determinant is a scalar value calculated from a square matrix. A zero determinant means the matrix is singular.</div>
+<div><strong class="block mb-1" style="color:var(--text)">Matrix Inverse</strong>The inverse matrix satisfies A × A⁻¹ = I. An inverse exists only when the determinant is non-zero.</div>
+</div>
+</div>
+</main>
+
+<script>
+let mode='multiply';
+let lastResult='';
+
+function createMatrix(id){
+ const container=document.getElementById('matrix'+id);
+ container.innerHTML='';
+ for(let i=0;i<16;i++){
+  const input=document.createElement('input');
+  input.type='number';
+  input.step='any';
+  input.id=id+'_'+i;
+  input.placeholder='0';
+  input.value=i%5===0?'1':'0';
+  container.appendChild(input);
+ }
+}
+
+function getMatrix(id){
+ const values=[];
+ for(let i=0;i<16;i++){
+  const raw=document.getElementById(id+'_'+i).value.trim();
+  if(raw==='')throw new Error(`Please fill all values in Matrix ${id}.`);
+  const n=Number(raw);
+  if(!Number.isFinite(n))throw new Error('Please enter valid numerical values.');
+  values.push(n);
+ }
+ return Array.from({length:4},(_,r)=>values.slice(r*4,r*4+4));
+}
+
+function setMode(newMode,button){
+ mode=newMode;
+ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+ button.classList.add('active');
+ document.getElementById('matrixBSection').style.display=mode==='multiply'?'block':'none';
+ document.getElementById('resultArea').innerHTML='Select matrices and click Calculate.';
+ document.getElementById('resultInfo').innerHTML='';
+}
+
+function multiply(A,B){
+ const R=Array.from({length:4},()=>Array(4).fill(0));
+ for(let i=0;i<4;i++){
+  for(let j=0;j<4;j++){
+   for(let k=0;k<4;k++)R[i][j]+=A[i][k]*B[k][j];
+  }
+ }
+ return R;
+}
+
+function determinant(M){
+ const A=M.map(row=>row.slice());
+ let det=1;
+ for(let i=0;i<4;i++){
+  let pivot=i;
+  for(let r=i+1;r<4;r++){
+   if(Math.abs(A[r][i])>Math.abs(A[pivot][i]))pivot=r;
+  }
+  if(Math.abs(A[pivot][i])<1e-12)return 0;
+  if(pivot!==i){
+   [A[i],A[pivot]]=[A[pivot],A[i]];
+   det*=-1;
+  }
+  const p=A[i][i];
+  det*=p;
+  for(let r=i+1;r<4;r++){
+   const factor=A[r][i]/p;
+   for(let c=i+1;c<4;c++)A[r][c]-=factor*A[i][c];
+  }
+ }
+ return det;
+}
+
+function inverse(M){
+ const A=M.map((row,i)=>[
+  ...row,
+  ...Array.from({length:4},(_,j)=>i===j?1:0)
+ ]);
+
+ for(let i=0;i<4;i++){
+  let pivot=i;
+  for(let r=i+1;r<4;r++){
+   if(Math.abs(A[r][i])>Math.abs(A[pivot][i]))pivot=r;
+  }
+  if(Math.abs(A[pivot][i])<1e-12)throw new Error('This matrix is singular. Its determinant is zero, so inverse does not exist.');
+
+  [A[i],A[pivot]]=[A[pivot],A[i]];
+
+  const divisor=A[i][i];
+  for(let c=0;c<8;c++)A[i][c]/=divisor;
+
+  for(let r=0;r<4;r++){
+   if(r===i)continue;
+   const factor=A[r][i];
+   for(let c=0;c<8;c++)A[r][c]-=factor*A[i][c];
+  }
+ }
+
+ return A.map(row=>row.slice(4));
+}
+
+function format(n){
+ if(Math.abs(n)<1e-10)n=0;
+ return Number(n.toFixed(6)).toString();
+}
+
+function displayMatrix(M){
+ const html='<div class="grid grid-cols-4 gap-2 w-full max-w-md mx-auto">'+
+ M.flat().map(v=>`<div class="result-cell">${format(v)}</div>`).join('')+
+ '</div>';
+ document.getElementById('resultArea').innerHTML=html;
+ lastResult=M.map(row=>row.map(format).join('\t')).join('\n');
+}
+
+function calculate(){
+ try{
+  const A=getMatrix('A');
+  const area=document.getElementById('resultArea');
+  const info=document.getElementById('resultInfo');
+
+  if(mode==='multiply'){
+   const B=getMatrix('B');
+   const R=multiply(A,B);
+   displayMatrix(R);
+   info.innerHTML='<strong>Operation:</strong> A × B<br><strong>Result:</strong> 4 × 4 matrix';
+  }
+
+  if(mode==='determinant'){
+   const d=determinant(A);
+   area.innerHTML=`<div><p class="muted text-sm mb-3">Determinant of Matrix A</p><div class="text-4xl font-bold" style="color:var(--accent)">${format(d)}</div></div>`;
+   lastResult=format(d);
+   info.innerHTML=`<strong>Matrix:</strong> 4 × 4<br><strong>Determinant:</strong> ${format(d)}<br><strong>Status:</strong> ${Math.abs(d)<1e-12?'Singular matrix':'Non-singular matrix'}`;
+  }
+
+  if(mode==='inverse'){
+   const d=determinant(A);
+   const R=inverse(A);
+   displayMatrix(R);
+   info.innerHTML=`<strong>Operation:</strong> A⁻¹<br><strong>Original determinant:</strong> ${format(d)}<br><strong>Verification:</strong> A × A⁻¹ = I`;
+  }
+ }catch(e){
+  alert(e.message);
+ }
+}
+
+function fillRandom(id){
+ for(let i=0;i<16;i++){
+  document.getElementById(id+'_'+i).value=Math.floor(Math.random()*19)-9;
+ }
+}
+
+function clearMatrices(){
+ ['A','B'].forEach(id=>{
+  for(let i=0;i<16;i++)document.getElementById(id+'_'+i).value='';
+ });
+ document.getElementById('resultArea').innerHTML='Enter matrix values and click Calculate.';
+ document.getElementById('resultInfo').innerHTML='';
+ lastResult='';
+}
+
+function loadExample(){
+ const A=[1,2,3,4,2,1,0,3,1,0,2,1,3,2,1,1];
+ const B=[2,0,1,3,1,2,0,1,3,1,2,0,0,1,3,2];
+ ['A','B'].forEach((id,index)=>{
+  const values=index===0?A:B;
+  values.forEach((v,i)=>document.getElementById(id+'_'+i).value=v);
+ });
+}
+
+async function copyResult(){
+ if(!lastResult){alert('No result to copy.');return;}
+ try{
+  await navigator.clipboard.writeText(lastResult);
+  alert('Result copied!');
+ }catch(e){
+  alert('Clipboard access is unavailable in this browser.');
+ }
+}
+
+document.getElementById('themeToggle').addEventListener('click',()=>{
+ document.body.classList.toggle('dark');
+ localStorage.setItem('calcsuite-theme',document.body.classList.contains('dark')?'dark':'light');
+});
+if(localStorage.getItem('calcsuite-theme')==='dark')document.body.classList.add('dark');
+
+createMatrix('A');
+createMatrix('B');
+</script>
+</body>
+</html>
