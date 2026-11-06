@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pregnancy Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#0d9488}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px}
+input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;color:var(--muted)}
+.btn{padding:11px 16px;border-radius:10px;font-weight:700;background:var(--accent);color:white}
+.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.muted{color:var(--muted)}
+.milestone{border-left:3px solid var(--accent);padding:4px 0 16px 16px;margin-left:7px}
+.badge{display:inline-block;padding:4px 9px;border-radius:20px;background:#ccfbf1;color:#115e59;font-size:12px;font-weight:700}
+</style>
+</head>
+<body>
+<header class="p-4 flex justify-between max-w-5xl mx-auto"><a href="../index.html" class="font-bold text-teal-600">← CalcSuite</a><button class="btn secondary" onclick="toggleTheme()">☼ Theme</button></header>
+<main class="max-w-5xl mx-auto p-4 space-y-5">
+<section><p class="text-sm font-bold text-teal-600">HEALTH & FITNESS</p><h1 class="text-3xl font-extrabold mt-1">Pregnancy Calculator</h1><p class="muted mt-2">Estimate your due date, pregnancy week, trimester and weekly milestones.</p></section>
+<section class="card">
+<h2 class="font-bold text-lg mb-4">Pregnancy details</h2>
+<div class="grid sm:grid-cols-2 gap-4">
+<div><label>Calculation method</label><select id="method" onchange="updateMethod()"><option value="lmp">Last menstrual period (LMP)</option><option value="conception">Known conception date</option></select></div>
+<div><label id="dateLabel">First day of last period</label><input id="date" type="date"></div>
+<div id="cycleBox"><label>Average menstrual cycle length (days)</label><input id="cycle" type="number" min="20" max="45" value="28"></div>
+</div>
+<button class="btn w-full mt-5" onclick="calculate()">Calculate Pregnancy Timeline</button>
+</section>
+<section id="result" class="hidden space-y-4">
+<div class="card">
+<p class="muted text-sm">Estimated due date</p><h2 class="text-3xl font-extrabold text-teal-600" id="dueDate">--</h2>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5">
+<div class="p-3 rounded-xl" style="background:var(--bg)"><p class="muted text-xs">Gestational age</p><b id="gestation">--</b></div>
+<div class="p-3 rounded-xl" style="background:var(--bg)"><p class="muted text-xs">Trimester</p><b id="trimester">--</b></div>
+<div class="p-3 rounded-xl" style="background:var(--bg)"><p class="muted text-xs">Days remaining</p><b id="remaining">--</b></div>
+</div>
+<div class="mt-4"><div class="flex justify-between text-sm mb-2"><span>Pregnancy progress</span><b id="progressText">--</b></div><div class="h-3 rounded-full overflow-hidden" style="background:var(--bg)"><div id="progress" class="h-full bg-teal-500 rounded-full" style="width:0%"></div></div></div>
+</div>
+<div class="card">
+<h2 class="font-bold text-lg mb-4">Pregnancy milestones</h2>
+<div id="milestones"></div>
+</div>
+<div class="flex gap-2 flex-wrap"><button class="btn" onclick="downloadCSV()">Download CSV</button><button class="btn secondary" onclick="downloadPDF()">Download PDF</button></div>
+</section>
+<div class="card text-sm muted"><b>Medical note:</b> This calculator provides an approximate timeline based on standard pregnancy dating. Ultrasound and your healthcare professional may revise your estimated due date. Seek medical advice for pregnancy care and concerns.</div>
+</main>
+<script>
+let report=null;
+function toggleTheme(){document.documentElement.classList.toggle('dark');localStorage.setItem('calcsuite-theme',document.documentElement.classList.contains('dark')?'dark':'light')}
+if(localStorage.getItem('calcsuite-theme')==='dark')document.documentElement.classList.add('dark');
+function updateMethod(){const lmp=method.value==='lmp';dateLabel.textContent=lmp?'First day of last period':'Estimated conception date';cycleBox.style.display=lmp?'block':'none'}
+const day=86400000;
+function addDays(d,n){let x=new Date(d);x.setDate(x.getDate()+n);return x}
+function fmt(d){return d.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}
+function calculate(){
+ if(!date.value){alert('Please select a date.');return}
+ const base=new Date(date.value+'T12:00:00');
+ const now=new Date();now.setHours(12,0,0,0);
+ if(isNaN(base)||base>now){alert('Please select a valid date that is not in the future.');return}
+ let lmpDate,due;
+ if(method.value==='lmp'){
+ const c=+cycle.value;if(c<20||c>45){alert('Cycle length must be between 20 and 45 days.');return}
+ lmpDate=base;due=addDays(base,280+(c-28));
+ }else{lmpDate=addDays(base,-14);due=addDays(base,266)}
+ const elapsed=Math.floor((now-lmpDate)/day);
+ if(elapsed<0){alert('The selected date is not valid.');return}
+ const weeks=Math.floor(elapsed/7),days=elapsed%7;
+ const daysLeft=Math.ceil((due-now)/day);
+ const trimester=weeks<14?'First trimester':weeks<28?'Second trimester':'Third trimester';
+ dueDate.textContent=fmt(due);gestation.textContent=weeks+' weeks, '+days+' days';document.getElementById('trimester').textContent=trimester;
+ remaining.textContent=daysLeft>0?daysLeft+' days':daysLeft===0?'Due today':'Past due date';
+ const pct=Math.min(100,Math.max(0,elapsed/280*100));progress.style.width=pct+'%';progressText.textContent=pct.toFixed(0)+'%';
+ const items=[
+ [4,'Early pregnancy','Pregnancy hormone levels rise; some people notice early symptoms.'],
+ [8,'Early development','Major organs begin forming; an early prenatal visit may be scheduled.'],
+ [12,'End of first trimester','First-trimester screening may be discussed with your clinician.'],
+ [16,'Second trimester','Some people begin to feel more energetic; routine prenatal care continues.'],
+ [20,'Mid-pregnancy','An anatomy ultrasound is commonly offered around this stage.'],
+ [24,'Viability milestone','Discuss fetal movement and warning signs with your care team.'],
+ [28,'Third trimester','Growth and prenatal monitoring become increasingly important.'],
+ [32,'Later pregnancy','Your care team may discuss birth preferences and ongoing monitoring.'],
+ [36,'Near term','Discuss signs of labour and when to contact your maternity unit.'],
+ [37,'Early term','Birth may happen; continue following your clinician’s guidance.'],
+ [40,'Estimated due date','Only a small proportion of babies arrive on the exact due date.']
+ ];
+ milestones.innerHTML=items.map(([w,t,d])=>`<div class="milestone"><div class="flex gap-2 items-center flex-wrap"><b>Week ${w}</b><span class="badge">${w<=weeks?'Milestone passed':w===weeks+1?'Coming up':'Upcoming'}</span></div><p class="font-semibold mt-1">${t}</p><p class="muted text-sm">${d}</p></div>`).join('');
+ report={method:method.value,inputDate:date.value,lmpDate:lmpDate.toISOString().slice(0,10),estimatedDueDate:due.toISOString().slice(0,10),gestationalAge:weeks+' weeks '+days+' days',trimester,daysRemaining:daysLeft};
+ result.classList.remove('hidden');
+}
+function downloadCSV(){if(!report)return;const csv='Metric,Value\n'+Object.entries(report).map(([k,v])=>`"${k}","${String(v).replace(/"/g,'""')}"`).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='pregnancy-timeline.csv';a.click();URL.revokeObjectURL(a.href)}
+function downloadPDF(){if(!report)return;const {jsPDF}=window.jspdf;const d=new jsPDF();d.setFontSize(20);d.text('CalcSuite - Pregnancy Timeline',15,20);d.setFontSize(12);let y=38;Object.entries(report).forEach(([k,v])=>{d.text(k+': '+v,15,y);y+=10});d.save('pregnancy-timeline.pdf')}
+</script>
+</body>
+</html>
