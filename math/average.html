@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Average Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#0d9488}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px}
+textarea{width:100%;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);min-height:130px}
+.btn{padding:12px 17px;border-radius:10px;background:var(--accent);color:white;font-weight:700}
+.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.muted{color:var(--muted)}.value{font-size:27px;font-weight:800;color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:10px;border-bottom:1px solid var(--border);text-align:left}
+</style>
+</head>
+<body>
+<header class="max-w-5xl mx-auto p-4 flex justify-between">
+<a href="../index.html" class="font-bold text-teal-600">← CalcSuite</a>
+<button id="themeToggle" class="btn secondary">☼ Theme</button>
+</header>
+
+<main class="max-w-5xl mx-auto p-4 space-y-5">
+<section>
+<p class="text-sm font-bold text-teal-600">MATH TOOLS</p>
+<h1 class="text-3xl font-extrabold mt-1">Average Calculator</h1>
+<p class="muted mt-2">Calculate mean, median, mode, range and sum for any numerical dataset.</p>
+</section>
+
+<section class="card">
+<h2 class="font-bold text-lg mb-3">Enter your dataset</h2>
+<label class="muted text-sm block mb-2">Enter numbers separated by commas, spaces or new lines.</label>
+<textarea id="data" placeholder="Example: 10, 20, 30, 40, 50">10, 20, 20, 30, 40, 50</textarea>
+<button class="btn w-full mt-4" onclick="calculate()">Calculate Statistics</button>
+</section>
+
+<section id="result" class="hidden space-y-4">
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+<div class="card"><p class="muted text-xs">Mean</p><div class="value" id="mean">--</div></div>
+<div class="card"><p class="muted text-xs">Median</p><div class="value" id="median">--</div></div>
+<div class="card"><p class="muted text-xs">Mode</p><div class="value" id="mode">--</div></div>
+<div class="card"><p class="muted text-xs">Range</p><div class="value" id="range">--</div></div>
+<div class="card"><p class="muted text-xs">Sum</p><div class="value" id="sum">--</div></div>
+<div class="card"><p class="muted text-xs">Count</p><div class="value" id="count">--</div></div>
+</div>
+
+<div class="card">
+<h3 class="font-bold mb-4">Dataset visualization</h3>
+<div style="height:300px"><canvas id="chart"></canvas></div>
+</div>
+
+<div class="card">
+<h3 class="font-bold mb-3">Sorted dataset</h3>
+<div class="overflow-x-auto">
+<table>
+<thead><tr><th>Position</th><th>Value</th><th>Frequency</th></tr></thead>
+<tbody id="tableBody"></tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<h3 class="font-bold mb-3">Statistical summary</h3>
+<div id="summary" class="muted text-sm space-y-2"></div>
+<div class="flex gap-2 flex-wrap mt-5">
+<button class="btn" onclick="downloadCSV()">Export CSV</button>
+<button class="btn secondary" onclick="downloadPDF()">Export PDF</button>
+</div>
+</div>
+</section>
+</main>
+
+<script>
+initTheme();
+
+let chartInstance=null;
+let report=null;
+
+function calculate(){
+ const raw=document.getElementById('data').value.trim();
+
+ if(!raw){
+  alert('Please enter your dataset.');
+  return;
+ }
+
+ const tokens=raw.split(/[\s,;]+/).filter(Boolean);
+
+ if(tokens.length>1000){
+  alert('Maximum 1000 numbers allowed.');
+  return;
+ }
+
+ const values=tokens.map(Number);
+
+ if(values.some(v=>!Number.isFinite(v))){
+  alert('Dataset contains invalid values. Enter numbers only.');
+  return;
+ }
+
+ if(values.some(v=>Math.abs(v)>1e12)){
+  alert('Please use numbers within ±1 trillion.');
+  return;
+ }
+
+ const sorted=[...values].sort((a,b)=>a-b);
+ const count=sorted.length;
+ const sum=values.reduce((a,b)=>a+b,0);
+ const mean=sum/count;
+
+ const median=count%2
+ ?sorted[Math.floor(count/2)]
+ :(sorted[count/2-1]+sorted[count/2])/2;
+
+ const frequencies=new Map();
+ sorted.forEach(v=>frequencies.set(v,(frequencies.get(v)||0)+1));
+ const maxFrequency=Math.max(...frequencies.values());
+ const modes=maxFrequency===1?[]:
+ [...frequencies].filter(x=>x[1]===maxFrequency).map(x=>x[0]);
+
+ const min=sorted[0],max=sorted[count-1];
+ const range=max-min;
+
+ document.getElementById('mean').textContent=mean.toFixed(4);
+ document.getElementById('median').textContent=median;
+ document.getElementById('mode').textContent=modes.length?modes.join(', '):'No mode';
+ document.getElementById('range').textContent=range;
+ document.getElementById('sum').textContent=sum;
+ document.getElementById('count').textContent=count;
+
+ document.getElementById('tableBody').innerHTML=sorted.map((v,i)=>`
+ <tr><td>${i+1}</td><td>${v}</td><td>${frequencies.get(v)}</td></tr>
+ `).join('');
+
+ document.getElementById('summary').innerHTML=`
+ <p>Minimum value: <b>${min}</b></p>
+ <p>Maximum value: <b>${max}</b></p>
+ <p>Number of observations: <b>${count}</b></p>
+ <p>Highest frequency: <b>${maxFrequency}</b></p>
+ <p>Mode: <b>${modes.length?modes.join(', '):'No mode'}</b></p>
+ `;
+
+ if(chartInstance)chartInstance.destroy();
+
+ const ctx=document.getElementById('chart').getContext('2d');
+ chartInstance=new Chart(ctx,{
+  type:'bar',
+  data:{
+   labels:sorted.map((v,i)=>'Item '+(i+1)),
+   datasets:[{
+    label:'Dataset values',
+    data:sorted,
+    backgroundColor:'rgba(13,148,136,0.65)',
+    borderColor:'#0d9488',
+    borderWidth:1,
+    borderRadius:5
+   }]
+  },
+  options:{
+   responsive:true,
+   maintainAspectRatio:false,
+   plugins:{legend:{display:false}},
+   scales:{
+    y:{beginAtZero:false},
+    x:{ticks:{autoSkip:true,maxTicksLimit:20}}
+   }
+  }
+ });
+
+ report=[
+  ['Count',count],
+  ['Sum',sum],
+  ['Mean',mean],
+  ['Median',median],
+  ['Mode',modes.length?modes.join(', '):'No mode'],
+  ['Minimum',min],
+  ['Maximum',max],
+  ['Range',range]
+ ];
+
+ document.getElementById('result').classList.remove('hidden');
+}
+
+function downloadCSV(){
+ if(!report)return;
+ exportCSV('average-statistics.csv',[
+  ['Metric','Value'],
+  ...report
+ ]);
+}
+
+function downloadPDF(){
+ if(!report)return;
+ exportPDF('average-statistics.pdf',
+ 'Average Calculator Report',
+ 'Statistical summary of your dataset',
+ ['Metric','Value'],report);
+}
+</script>
+</body>
+</html>
