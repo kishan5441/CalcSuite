@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cartesian & Polar Coordinates | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#64748b;--border:#e5eaf2;--accent:#6366f1}
+body.dark{--bg:#0b1120;--card:#151e30;--text:#f1f5f9;--muted:#94a3b8;--border:#29364b;--accent:#818cf8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px}
+.muted{color:var(--muted)}input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:white;padding:11px 18px;border-radius:10px;font-weight:600}
+.secondary{background:var(--bg);border:1px solid var(--border);padding:10px 15px;border-radius:10px}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:15px}
+.panel{display:none}.panel.active{display:block}
+.tab{padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-weight:600}
+.tab.active{background:var(--accent);color:white;border-color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="border-b" style="border-color:var(--border)">
+<div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+<a href="../index.html" class="font-bold text-xl">← CalcSuite</a>
+<button id="themeToggle" class="secondary">🌙 Theme</button>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8">
+<div class="mb-7">
+<p class="text-sm muted mb-2">MATH CALCULATORS / COORDINATE GEOMETRY</p>
+<h1 class="text-3xl md:text-4xl font-bold">Cartesian & Polar Coordinates</h1>
+<p class="muted mt-2">Convert coordinates, calculate distance, angle, radius and visualize points on coordinate planes.</p>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-6">
+<button class="tab active" onclick="showPanel('convert',this)">Coordinate Converter</button>
+<button class="tab" onclick="showPanel('distance',this)">Distance & Midpoint</button>
+<button class="tab" onclick="showPanel('plot',this)">Coordinate Plane</button>
+</div>
+
+<div id="convert" class="panel active">
+<div class="grid lg:grid-cols-2 gap-6">
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-4">Cartesian → Polar</h2>
+<div class="grid grid-cols-2 gap-3">
+<div><label class="text-sm font-semibold">X coordinate</label><input id="cx" type="number" step="any" value="3"></div>
+<div><label class="text-sm font-semibold">Y coordinate</label><input id="cy" type="number" step="any" value="4"></div>
+</div>
+<button class="btn w-full mt-4" onclick="cartToPolar()">Convert to Polar</button>
+<div class="grid grid-cols-2 gap-3 mt-4">
+<div class="stat"><p class="muted text-sm">Radius (r)</p><h2 id="radius" class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Angle (θ)</p><h2 id="theta" class="text-2xl font-bold mt-2">—</h2></div>
+</div>
+</section>
+
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-4">Polar → Cartesian</h2>
+<div class="grid grid-cols-2 gap-3">
+<div><label class="text-sm font-semibold">Radius (r)</label><input id="pr" type="number" step="any" value="5"></div>
+<div><label class="text-sm font-semibold">Angle (θ)</label><input id="pt" type="number" step="any" value="53.130102"></div>
+</div>
+<div class="mt-3">
+<label class="text-sm font-semibold">Angle Unit</label>
+<select id="angleUnit"><option value="degrees">Degrees</option><option value="radians">Radians</option></select>
+</div>
+<button class="btn w-full mt-4" onclick="polarToCart()">Convert to Cartesian</button>
+<div class="grid grid-cols-2 gap-3 mt-4">
+<div class="stat"><p class="muted text-sm">X coordinate</p><h2 id="outX" class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Y coordinate</p><h2 id="outY" class="text-2xl font-bold mt-2">—</h2></div>
+</div>
+</section>
+</div>
+</div>
+
+<div id="distance" class="panel">
+<div class="grid lg:grid-cols-2 gap-6">
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-4">Two Point Calculator</h2>
+<div class="grid grid-cols-2 gap-3">
+<div><label class="text-sm">X₁</label><input id="dx1" type="number" value="2" step="any"></div>
+<div><label class="text-sm">Y₁</label><input id="dy1" type="number" value="3" step="any"></div>
+<div><label class="text-sm">X₂</label><input id="dx2" type="number" value="6" step="any"></div>
+<div><label class="text-sm">Y₂</label><input id="dy2" type="number" value="7" step="any"></div>
+</div>
+<button class="btn w-full mt-4" onclick="distanceCalc()">Calculate</button>
+</section>
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-4">Results</h2>
+<div class="grid grid-cols-2 gap-3" id="distanceResults">
+<div class="stat"><p class="muted text-sm">Distance</p><h2 class="text-xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Midpoint</p><h2 class="text-xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Slope</p><h2 class="text-xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Angle</p><h2 class="text-xl font-bold mt-2">—</h2></div>
+</div>
+</section>
+</div>
+</div>
+
+<div id="plot" class="panel">
+<div class="grid lg:grid-cols-3 gap-6">
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-4">Plot a Point</h2>
+<div class="grid grid-cols-2 gap-3">
+<div><label class="text-sm">X coordinate</label><input id="plotX" type="number" step="any" value="3"></div>
+<div><label class="text-sm">Y coordinate</label><input id="plotY" type="number" step="any" value="4"></div>
+</div>
+<button class="btn w-full mt-4" onclick="addPoint()">Add Point</button>
+<button class="secondary w-full mt-2" onclick="clearPoints()">Clear Points</button>
+<div id="pointList" class="mt-4 space-y-2 text-sm muted">No points added.</div>
+</section>
+<section class="card p-5 lg:col-span-2">
+<h2 class="font-bold text-lg mb-4">Cartesian Coordinate Plane</h2>
+<canvas id="plane" width="700" height="500" class="w-full"></canvas>
+<p class="muted text-xs mt-2">Points are displayed using their X and Y coordinates. The graph automatically adjusts its scale.</p>
+</section>
+</div>
+</div>
+
+<div class="card p-5 mt-6">
+<h2 class="font-bold text-lg mb-3">Coordinate Formulas</h2>
+<div class="grid md:grid-cols-2 gap-4 text-sm muted">
+<div><b>Cartesian to Polar</b><p>r = √(x² + y²)</p><p>θ = atan2(y, x)</p></div>
+<div><b>Polar to Cartesian</b><p>x = r cos(θ)</p><p>y = r sin(θ)</p></div>
+<div><b>Distance</b><p>d = √[(x₂−x₁)² + (y₂−y₁)²]</p></div>
+<div><b>Midpoint</b><p>M = ((x₁+x₂)/2, (y₁+y₂)/2)</p></div>
+</div>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n.toFixed(6));
+let points=[];
+
+function value(id){
+ const v=$(id).value.trim();
+ if(v==='')throw Error('Please fill in all required fields.');
+ const n=Number(v);
+ if(!Number.isFinite(n))throw Error('Please enter valid numbers.');
+ return n;
+}
+
+function showPanel(id,btn){
+ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+ document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+ $(id).classList.add('active');
+ btn.classList.add('active');
+ if(id==='plot')drawPlane();
+}
+
+function cartToPolar(){
+ try{
+  const x=value('cx'),y=value('cy');
+  const r=Math.hypot(x,y);
+  let angle=Math.atan2(y,x)*180/Math.PI;
+  if(angle<0)angle+=360;
+  $('radius').textContent=fmt(r);
+  $('theta').textContent=fmt(angle)+'°';
+ }catch(e){alert(e.message);}
+}
+
+function polarToCart(){
+ try{
+  const r=value('pr'),angle=value('pt');
+  const rad=$('angleUnit').value==='degrees'?angle*Math.PI/180:angle;
+  const x=r*Math.cos(rad),y=r*Math.sin(rad);
+  $('outX').textContent=fmt(x);
+  $('outY').textContent=fmt(y);
+ }catch(e){alert(e.message);}
+}
+
+function distanceCalc(){
+ try{
+  const x1=value('dx1'),y1=value('dy1'),x2=value('dx2'),y2=value('dy2');
+  const dx=x2-x1,dy=y2-y1;
+  const distance=Math.hypot(dx,dy);
+  const midpoint=[(x1+x2)/2,(y1+y2)/2];
+  const slope=dx===0?'Undefined':fmt(dy/dx);
+  let angle=Math.atan2(dy,dx)*180/Math.PI;
+  if(angle<0)angle+=360;
+
+  const results=[
+   ['Distance',fmt(distance)],
+   ['Midpoint',`(${fmt(midpoint[0])}, ${fmt(midpoint[1])})`],
+   ['Slope',slope],
+   ['Angle',fmt(angle)+'°']
+  ];
+  $('distanceResults').innerHTML=results.map(([k,v])=>`
+   <div class="stat"><p class="muted text-sm">${k}</p><h2 class="text-lg md:text-xl font-bold mt-2 break-words">${v}</h2></div>`).join('');
+ }catch(e){alert(e.message);}
+}
+
+function addPoint(){
+ try{
+  const x=value('plotX'),y=value('plotY');
+  points.push({x,y});
+  renderPointList();
+  drawPlane();
+ }catch(e){alert(e.message);}
+}
+
+function renderPointList(){
+ $('pointList').innerHTML=points.length?points.map((p,i)=>`
+ <div class="flex justify-between items-center p-2 rounded-lg" style="background:var(--bg)">
+ <span>P${i+1}: (${p.x}, ${p.y})</span>
+ <button class="text-red-500 font-bold" onclick="removePoint(${i})">✕</button>
+ </div>`).join(''):'No points added.';
+}
+
+function removePoint(i){points.splice(i,1);renderPointList();drawPlane();}
+function clearPoints(){points=[];renderPointList();drawPlane();}
+
+function drawPlane(){
+ const canvas=$('plane'),ctx=canvas.getContext('2d');
+ const w=canvas.width,h=canvas.height;
+ ctx.clearRect(0,0,w,h);
+
+ let extent=10;
+ points.forEach(p=>{extent=Math.max(extent,Math.abs(p.x)+2,Math.abs(p.y)+2);});
+ extent=Math.ceil(extent);
+ const scale=Math.min((w-100)/(extent*2),(h-100)/(extent*2));
+ const ox=w/2,oy=h/2;
+ const sx=x=>ox+x*scale,sy=y=>oy-y*scale;
+
+ ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--border');
+ ctx.lineWidth=1;
+ for(let i=-extent;i<=extent;i++){
+  ctx.beginPath();ctx.moveTo(sx(i),50);ctx.lineTo(sx(i),h-50);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(50,sy(i));ctx.lineTo(w-50,sy(i));ctx.stroke();
+ }
+
+ ctx.strokeStyle='#94a3b8';ctx.lineWidth=2;
+ ctx.beginPath();ctx.moveTo(40,oy);ctx.lineTo(w-40,oy);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(ox,40);ctx.lineTo(ox,h-40);ctx.stroke();
+
+ ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--muted');
+ ctx.font='12px sans-serif';
+ ctx.textAlign='center';
+ for(let i=-extent;i<=extent;i++){
+  if(i!==0){
+   ctx.fillText(i,sx(i),oy+17);
+   ctx.fillText(i,ox-15,sy(i)+4);
+  }
+ }
+ ctx.fillText('X',w-30,oy-10);
+ ctx.fillText('Y',ox+15,30);
+ ctx.fillText('0',ox-12,oy+16);
+
+ points.forEach((p,i)=>{
+  ctx.fillStyle='#6366f1';
+  ctx.beginPath();ctx.arc(sx(p.x),sy(p.y),7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--text');
+  ctx.font='bold 13px sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText(`P${i+1} (${p.x}, ${p.y})`,sx(p.x)+10,sy(p.y)-10);
+ });
+}
+
+$('themeToggle').addEventListener('click',()=>{
+ document.body.classList.toggle('dark');
+ localStorage.setItem('calcsuite-theme',document.body.classList.contains('dark')?'dark':'light');
+ drawPlane();
+});
+if(localStorage.getItem('calcsuite-theme')==='dark')document.body.classList.add('dark');
+
+cartToPolar();
+polarToCart();
+distanceCalc();
+drawPlane();
+</script>
+</body>
+</html>
