@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scientific Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#0d9488}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px}
+button{min-height:48px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font-size:16px;font-weight:600}
+button:hover{border-color:var(--accent)}
+.key{width:100%}.op{color:var(--accent)}.equal{background:var(--accent);color:white}
+#display{width:100%;padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--text);font-size:27px;text-align:right;outline:none}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="max-w-3xl mx-auto p-4 flex justify-between">
+<a href="../index.html" class="font-bold text-teal-600">← CalcSuite</a>
+<button id="themeToggle" class="px-4">☼ Theme</button>
+</header>
+
+<main class="max-w-3xl mx-auto p-4 space-y-5">
+<section>
+<p class="text-sm font-bold text-teal-600">MATH TOOLS</p>
+<h1 class="text-3xl font-extrabold mt-1">Scientific Calculator</h1>
+<p class="muted mt-2">Advanced calculations, trigonometry, logarithms and more.</p>
+</section>
+
+<section class="card">
+<div class="flex justify-between items-center mb-3">
+<span class="muted text-sm">Expression</span>
+<div class="flex gap-2">
+<button class="px-3 text-sm" onclick="setAngle('DEG')" id="degBtn">DEG</button>
+<button class="px-3 text-sm" onclick="setAngle('RAD')" id="radBtn">RAD</button>
+</div>
+</div>
+<input id="display" value="0" readonly aria-label="Calculator display">
+<div class="flex justify-between items-center mt-3 mb-3">
+<p class="muted text-xs" id="history">Ready</p>
+<button class="px-3 text-xs" onclick="clearAll()">AC</button>
+</div>
+
+<div class="grid grid-cols-5 gap-2" id="keys">
+<button onclick="fn('sin')">sin</button>
+<button onclick="fn('cos')">cos</button>
+<button onclick="fn('tan')">tan</button>
+<button onclick="fn('log')">log</button>
+<button onclick="fn('ln')">ln</button>
+
+<button onclick="fn('sqrt')">√</button>
+<button onclick="fn('square')">x²</button>
+<button onclick="fn('cube')">x³</button>
+<button onclick="fn('factorial')">n!</button>
+<button onclick="insert('^')">xʸ</button>
+
+<button onclick="insert('(')">(</button>
+<button onclick="insert(')')">)</button>
+<button onclick="insert('π')">π</button>
+<button onclick="insert('e')">e</button>
+<button onclick="backspace()">⌫</button>
+
+<button onclick="insert('7')">7</button>
+<button onclick="insert('8')">8</button>
+<button onclick="insert('9')">9</button>
+<button class="op" onclick="insert('/')">÷</button>
+<button class="op" onclick="insert('%')">%</button>
+
+<button onclick="insert('4')">4</button>
+<button onclick="insert('5')">5</button>
+<button onclick="insert('6')">6</button>
+<button class="op" onclick="insert('*')">×</button>
+<button class="op" onclick="insert('!')">!</button>
+
+<button onclick="insert('1')">1</button>
+<button onclick="insert('2')">2</button>
+<button onclick="insert('3')">3</button>
+<button class="op" onclick="insert('-')">−</button>
+<button onclick="fn('reciprocal')">1/x</button>
+
+<button onclick="insert('0')">0</button>
+<button onclick="insert('.')">.</button>
+<button onclick="insert('Ans')">Ans</button>
+<button class="op" onclick="insert('+')">+</button>
+<button class="equal" onclick="calculate()">=</button>
+</div>
+</section>
+
+<section class="card">
+<h3 class="font-bold mb-3">Calculation history</h3>
+<div id="historyList" class="space-y-2 muted text-sm">No calculations yet.</div>
+</section>
+</main>
+
+<script>
+initTheme();
+
+let expression='';
+let answer=0;
+let angleMode='DEG';
+let historyItems=[];
+
+const display=document.getElementById('display');
+
+function render(){
+ display.value=expression||'0';
+}
+
+function insert(v){
+ if(expression==='Error')expression='';
+ expression+=v;
+ render();
+}
+
+function clearAll(){
+ expression='';
+ render();
+ document.getElementById('history').textContent='Ready';
+}
+
+function backspace(){
+ expression=expression.slice(0,-1);
+ render();
+}
+
+function setAngle(mode){
+ angleMode=mode;
+ document.getElementById('degBtn').style.borderColor=mode==='DEG'?'var(--accent)':'var(--border)';
+ document.getElementById('radBtn').style.borderColor=mode==='RAD'?'var(--accent)':'var(--border)';
+}
+
+function factorial(n){
+ if(!Number.isInteger(n)||n<0||n>170)throw Error('Factorial requires an integer from 0 to 170');
+ let r=1;
+ for(let i=2;i<=n;i++)r*=i;
+ return r;
+}
+
+function fn(name){
+ try{
+  const x=calculateExpression();
+  let result;
+
+  switch(name){
+   case 'sin':result=Math.sin(angleMode==='DEG'?x*Math.PI/180:x);break;
+   case 'cos':result=Math.cos(angleMode==='DEG'?x*Math.PI/180:x);break;
+   case 'tan':result=Math.tan(angleMode==='DEG'?x*Math.PI/180:x);break;
+   case 'log':if(x<=0)throw Error('Log requires a positive number');result=Math.log10(x);break;
+   case 'ln':if(x<=0)throw Error('Ln requires a positive number');result=Math.log(x);break;
+   case 'sqrt':if(x<0)throw Error('Invalid square root');result=Math.sqrt(x);break;
+   case 'square':result=x*x;break;
+   case 'cube':result=x*x*x;break;
+   case 'factorial':result=factorial(x);break;
+   case 'reciprocal':if(x===0)throw Error('Cannot divide by zero');result=1/x;break;
+  }
+  if(!Number.isFinite(result))throw Error('Invalid result');
+  expression=String(Number(result.toPrecision(12)));
+  answer=result;
+  render();
+ }catch(e){display.value=e.message;expression='Error'}
+}
+
+function calculateExpression(){
+ if(!expression)throw Error('Enter an expression');
+
+ let s=expression.replace(/π/g,'Math.PI').replace(/\be\b/g,'Math.E')
+ .replace(/\bAns\b/g,String(answer))
+ .replace(/\^/g,'**');
+
+ // Allow only calculator characters and Math.PI / Math.E.
+ if(!/^[0-9+\-*/().%!\sA-Za-z]+$/.test(s))throw Error('Invalid expression');
+
+ // Convert postfix factorial, e.g. 5! and (2+3)!.
+ s=s.replace(/(\d+(?:\.\d+)?|\([^()]*\))!/g,'factorial($1)');
+
+ if(/[^0-9+\-*/().%\sA-Za-z]/.test(s))throw Error('Invalid expression');
+ if(!/^[0-9+\-*/().%\sA-Za-z]+$/.test(s))throw Error('Invalid expression');
+
+ // Only expose the required Math methods and factorial.
+ const allowed=/^(?:[\d+\-*/().%\s]|Math\.(?:PI|E)|factorial|[A-Za-z])+$/;
+ if(!allowed.test(s))throw Error('Invalid expression');
+
+ const result=Function('factorial','return ('+s+')')(factorial);
+ if(typeof result!=='number'||!Number.isFinite(result))throw Error('Math error');
+ return result;
+}
+
+function calculate(){
+ const old=expression;
+ try{
+  const result=calculateExpression();
+  answer=result;
+  expression=String(Number(result.toPrecision(12)));
+  render();
+  document.getElementById('history').textContent=old+' = '+expression;
+  historyItems.unshift({expression:old,result:expression});
+  updateHistory();
+ }catch(e){
+  display.value=e.message;
+  expression='Error';
+ }
+}
+
+function updateHistory(){
+ document.getElementById('historyList').innerHTML=historyItems.slice(0,10).map(x=>
+ `<div class="flex justify-between border-b pb-2" style="border-color:var(--border)">
+ <span>${escapeHTML(x.expression)}</span><b>${escapeHTML(x.result)}</b></div>`
+ ).join('')||'No calculations yet.';
+}
+
+function escapeHTML(s){
+ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.addEventListener('keydown',e=>{
+ if(e.target.tagName==='INPUT')return;
+ if(/^[0-9.+\-*/()]$/.test(e.key))insert(e.key);
+ if(e.key==='Enter')calculate();
+ if(e.key==='Backspace')backspace();
+ if(e.key==='Escape')clearAll();
+});
+
+setAngle('DEG');
+</script>
+</body>
+</html>
