@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salary Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{
+--bg:#f4f7fb;--card:#fff;--surface:#f1f5f9;--text:#172033;--muted:#64748b;
+--border:#e2e8f0;--primary:#4f46e5;--green:#059669;--red:#dc2626;--shadow:0 8px 28px rgba(15,23,42,.06)
+}
+html.dark{
+--bg:#0b1220;--card:#111c2e;--surface:#1c2a40;--text:#e5edf8;--muted:#9aabc2;
+--border:#293950;--primary:#818cf8;--green:#34d399;--red:#fb7185;--shadow:0 8px 28px rgba(0,0,0,.18)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
+.input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);outline:none}
+.input:focus{border-color:var(--primary)}
+label{display:block;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:7px}
+.muted{color:var(--muted)}
+.btn{padding:11px 17px;border-radius:10px;font-weight:700;cursor:pointer}
+.primary{background:var(--primary);color:white}
+.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.stat{padding:18px;border-radius:14px;background:var(--surface)}
+.value{font-size:clamp(20px,3vw,28px);font-weight:800;margin-top:7px}
+table{width:100%;border-collapse:collapse;min-width:480px}
+th,td{padding:12px;border-bottom:1px solid var(--border);font-size:13px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{background:var(--surface);color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="border-b" style="background:var(--card);border-color:var(--border)">
+ <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+  <div><a href="../index.html" class="muted text-sm">← Back to Dashboard</a><h1 class="text-xl md:text-2xl font-extrabold mt-1">Salary Calculator</h1></div>
+  <button id="themeBtn" class="btn secondary">🌙 Theme</button>
+ </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+ <p class="muted text-sm">Calculate your estimated take-home salary from CTC, salary components and deductions.</p>
+
+ <div class="grid lg:grid-cols-2 gap-6">
+  <section class="card p-5 md:p-6">
+   <h2 class="font-bold text-lg mb-5">Salary Structure</h2>
+   <div class="grid sm:grid-cols-2 gap-4">
+    <div class="sm:col-span-2"><label>Annual CTC (₹)</label><input id="ctc" class="input" type="number" value="1200000" min="0"></div>
+    <div><label>Basic Salary (% of CTC)</label><input id="basicPct" class="input" type="number" value="40" min="0" max="100"></div>
+    <div><label>HRA (% of Basic)</label><input id="hraPct" class="input" type="number" value="40" min="0" max="100"></div>
+    <div><label>Other Allowances (Annual ₹)</label><input id="allowances" class="input" type="number" value="200000" min="0"></div>
+    <div><label>Employer PF (Annual ₹)</label><input id="employerPF" class="input" type="number" value="21600" min="0"></div>
+    <div><label>Employee PF (% of Basic)</label><input id="employeePFPct" class="input" type="number" value="12" min="0" max="100"></div>
+    <div><label>Professional Tax (Monthly ₹)</label><input id="profTax" class="input" type="number" value="200" min="0"></div>
+    <div><label>Other Monthly Deductions (₹)</label><input id="otherDed" class="input" type="number" value="0" min="0"></div>
+    <div><label>Estimated Annual Income Tax (₹)</label><input id="tax" class="input" type="number" value="0" min="0"></div>
+   </div>
+   <button onclick="calculate()" class="btn primary w-full mt-6">Calculate In-hand Salary</button>
+  </section>
+
+  <section class="card p-5 md:p-6">
+   <h2 class="font-bold text-lg mb-5">Your Salary Summary</h2>
+   <div class="stat mb-3">
+    <div class="muted text-sm">Estimated Monthly In-hand Salary</div>
+    <div class="value" id="monthly">₹0</div>
+   </div>
+   <div class="grid grid-cols-2 gap-3">
+    <div class="stat"><div class="muted text-sm">Annual In-hand</div><div class="value" id="annual">₹0</div></div>
+    <div class="stat"><div class="muted text-sm">Monthly Gross</div><div class="value" id="gross">₹0</div></div>
+    <div class="stat"><div class="muted text-sm">Total Annual Deductions</div><div class="value" id="deductions">₹0</div></div>
+    <div class="stat"><div class="muted text-sm">Effective Deduction</div><div class="value" id="deductionPct">0%</div></div>
+   </div>
+   <p class="muted text-sm mt-4" id="insight">Enter your salary structure to calculate your take-home pay.</p>
+  </section>
+ </div>
+
+ <section class="card p-5">
+  <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+   <div><h2 class="font-bold text-lg">Salary Breakdown</h2><p class="muted text-sm">Annual salary components and deductions.</p></div>
+   <div class="flex gap-2"><button onclick="downloadCSV()" class="btn secondary">Export CSV</button><button onclick="downloadPDF()" class="btn secondary">Export PDF</button></div>
+  </div>
+  <div class="overflow-x-auto">
+   <table>
+    <thead><tr><th>Component</th><th>Annual Amount</th><th>Monthly Amount</th></tr></thead>
+    <tbody id="breakdown"></tbody>
+   </table>
+  </div>
+ </section>
+
+ <div class="card p-5">
+  <h2 class="font-bold text-lg mb-2">Important Tax Note</h2>
+  <p class="muted text-sm leading-6">This calculator uses the annual income tax amount entered by you. It does not automatically determine your tax liability under the old or new tax regime. Actual tax depends on the applicable financial year, deductions, exemptions, surcharge, cess and other rules. Employer PF is treated as part of CTC, not as cash paid to you.</p>
+ </div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'₹'+Math.round(n||0).toLocaleString('en-IN');
+let rows=[],result={};
+
+function calculate(){
+ const ctc=+$('ctc').value,basicPct=+$('basicPct').value/100;
+ const hraPct=+$('hraPct').value/100,allowances=+$('allowances').value;
+ const employerPF=+$('employerPF').value,employeePFPct=+$('employeePFPct').value/100;
+ const profTax=+$('profTax').value,otherDed=+$('otherDed').value,tax=+$('tax').value;
+
+ const vals=[ctc,basicPct,hraPct,allowances,employerPF,employeePFPct,profTax,otherDed,tax];
+ if(!vals.every(Number.isFinite)||ctc<0||basicPct<0||basicPct>1||hraPct<0||hraPct>1||
+ allowances<0||employerPF<0||employeePFPct<0||employeePFPct>1||profTax<0||otherDed<0||tax<0){
+  alert('Please enter valid non-negative values and percentages between 0 and 100.');return;
+ }
+ const basic=ctc*basicPct;
+ const hra=basic*hraPct;
+ const employeePF=basic*employeePFPct;
+ const grossCash=ctc-employerPF;
+ const otherComponents=grossCash-basic-hra;
+ const totalMonthlyDed=employeePF/12+profTax+otherDed+tax/12;
+ const annualDed=employeePF+profTax*12+otherDed*12+tax;
+ const annualTakeHome=grossCash-annualDed;
+ const monthlyTakeHome=annualTakeHome/12;
+
+ if(otherComponents<0){
+  alert('Basic salary, HRA and employer PF exceed your CTC. Please adjust the inputs.');return;
+ }
+ if(annualTakeHome<0){
+  alert('Your deductions exceed your cash salary. Please review your inputs.');return;
+ }
+
+ $('monthly').textContent=money(monthlyTakeHome);
+ $('annual').textContent=money(annualTakeHome);
+ $('gross').textContent=money(grossCash/12);
+ $('deductions').textContent=money(annualDed);
+ $('deductionPct').textContent=(grossCash>0?annualDed/grossCash*100:0).toFixed(1)+'%';
+ $('insight').textContent=`Your estimated monthly take-home is ${money(monthlyTakeHome)} after employee PF, professional tax, other deductions and the income tax entered above.`;
+
+ rows=[
+  ['Basic Salary',basic],
+  ['HRA',hra],
+  ['Other Allowances',otherComponents],
+  ['Employer PF (CTC component)',employerPF],
+  ['Employee PF Deduction',-employeePF],
+  ['Professional Tax',-profTax*12],
+  ['Other Deductions',-otherDed*12],
+  ['Estimated Income Tax',-tax],
+  ['Annual Take-home Salary',annualTakeHome]
+ ];
+ $('breakdown').innerHTML=rows.map((r,i)=>`<tr><td>${r[0]}</td><td>${money(r[1])}</td><td>${money(r[1]/12)}</td></tr>`).join('');
+ result={ctc,grossCash,annualDed,annualTakeHome,monthlyTakeHome};
+}
+function downloadCSV(){
+ if(!rows.length){alert('Calculate first');return}
+ const data=[['Component','Annual Amount','Monthly Amount'],...rows.map(r=>[r[0],r[1],r[1]/12])];
+ const csv=data.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='salary-breakdown.csv';a.click();URL.revokeObjectURL(a.href);
+}
+function downloadPDF(){
+ if(!rows.length){alert('Calculate first');return}
+ if(!window.jspdf){alert('PDF library unavailable.');return}
+ const doc=new jspdf.jsPDF();
+ doc.text('Salary Breakdown Report',14,15);
+ doc.text('Monthly In-hand: '+money(result.monthlyTakeHome),14,25);
+ doc.text('Annual In-hand: '+money(result.annualTakeHome),14,33);
+ doc.autoTable({startY:42,head:[['Component','Annual Amount','Monthly Amount']],body:rows.map(r=>[r[0],money(r[1]),money(r[1]/12)])});
+ doc.save('salary-breakdown.pdf');
+}
+function setTheme(t){
+ document.documentElement.classList.toggle('dark',t==='dark');
+ localStorage.setItem('calcsuite-theme',t);
+ $('themeBtn').textContent=t==='dark'?'☀️ Light':'🌙 Dark';
+}
+$('themeBtn').onclick=()=>setTheme(document.documentElement.classList.contains('dark')?'light':'dark');
+setTheme(localStorage.getItem('calcsuite-theme')||localStorage.getItem('theme')||'light');
+calculate();
+</script>
+</body>
+</html>
