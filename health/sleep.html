@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Sleep Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#6366f1}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px}
+input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;color:var(--muted)}
+.btn{padding:12px 17px;border-radius:10px;background:var(--accent);color:white;font-weight:700}
+.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.muted{color:var(--muted)}
+.value{font-size:26px;font-weight:800;color:var(--accent)}
+.cycle{padding:15px;border-radius:12px;background:var(--bg);border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<header class="max-w-5xl mx-auto p-4 flex justify-between">
+<a href="../index.html" class="font-bold text-indigo-600">← CalcSuite</a>
+<button id="themeToggle" class="btn secondary">☼ Theme</button>
+</header>
+
+<main class="max-w-5xl mx-auto p-4 space-y-5">
+<section>
+<p class="text-sm font-bold text-indigo-600">HEALTH & FITNESS</p>
+<h1 class="text-3xl font-extrabold mt-1">Sleep Calculator</h1>
+<p class="muted mt-2">Find suggested bedtime or wake-up times using approximate 90-minute sleep cycles.</p>
+</section>
+
+<section class="card">
+<h2 class="font-bold text-lg mb-4">Choose your calculation</h2>
+<div>
+<label>Calculation mode</label>
+<select id="mode" onchange="updateMode()">
+<option value="wake">I need to wake up at...</option>
+<option value="bed">I plan to go to bed at...</option>
+</select>
+</div>
+
+<div class="mt-4">
+<label id="timeLabel">Desired wake-up time</label>
+<input type="time" id="time" value="07:00">
+</div>
+
+<div class="mt-4">
+<label>Time needed to fall asleep (minutes)</label>
+<input type="number" id="latency" min="0" max="120" value="15">
+</div>
+
+<button class="btn w-full mt-5" onclick="calculate()">Calculate Sleep Times</button>
+</section>
+
+<section id="result" class="hidden space-y-4">
+<div class="card">
+<h2 class="font-bold text-lg mb-2" id="resultHeading">Recommended times</h2>
+<p class="muted text-sm mb-4" id="resultDescription"></p>
+<div id="times" class="space-y-3"></div>
+</div>
+
+<div class="card">
+<h3 class="font-bold text-lg mb-3">Understanding sleep cycles</h3>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+<div class="cycle"><p class="muted text-xs">1 cycle</p><b>1.5 hours</b></div>
+<div class="cycle"><p class="muted text-xs">4 cycles</p><b>6 hours</b></div>
+<div class="cycle"><p class="muted text-xs">5 cycles</p><b>7.5 hours</b></div>
+<div class="cycle"><p class="muted text-xs">6 cycles</p><b>9 hours</b></div>
+<div class="cycle"><p class="muted text-xs">7 cycles</p><b>10.5 hours</b></div>
+<div class="cycle"><p class="muted text-xs">Cycle duration</p><b>~90 minutes</b></div>
+</div>
+<div class="text-sm muted mt-4">
+A sleep cycle is not exactly 90 minutes for everyone. Actual sleep cycles vary throughout the night.
+</div>
+</div>
+
+<div class="card">
+<h3 class="font-bold mb-3">Sleep recommendations</h3>
+<div class="text-sm muted space-y-2">
+<p>• Adults generally need at least 7 hours of sleep per night.</p>
+<p>• Maintain a consistent bedtime and wake-up time.</p>
+<p>• Reduce bright screens and caffeine close to bedtime.</p>
+<p>• Avoid relying on cycle calculations if you regularly feel tired.</p>
+</div>
+<div class="flex flex-wrap gap-2 mt-5">
+<button class="btn" onclick="downloadCSV()">Export CSV</button>
+<button class="btn secondary" onclick="downloadPDF()">Export PDF</button>
+</div>
+</div>
+</section>
+
+<div class="card text-sm muted">
+<strong>Disclaimer:</strong> This calculator provides approximate sleep timing suggestions, not a medical sleep assessment. The 90-minute cycle model is a simplification. Sleep needs vary by age and individual health.
+</div>
+</main>
+
+<script>
+initTheme();
+
+let report=null;
+
+function updateMode(){
+ const mode=document.getElementById('mode').value;
+ document.getElementById('timeLabel').textContent=
+ mode==='wake'?'Desired wake-up time':'Desired bedtime';
+}
+
+function parseTime(value){
+ const [h,m]=value.split(':').map(Number);
+ return h*60+m;
+}
+
+function formatTime(minutes){
+ minutes=((minutes%1440)+1440)%1440;
+ const h=Math.floor(minutes/60);
+ const m=minutes%60;
+ const d=new Date();
+ d.setHours(h,m,0,0);
+ return d.toLocaleTimeString('en-IN',{
+  hour:'2-digit',minute:'2-digit',hour12:true
+ });
+}
+
+function calculate(){
+ const mode=document.getElementById('mode').value;
+ const time=document.getElementById('time').value;
+ const latency=getNumber('latency');
+
+ if(!time||latency<0||latency>120){
+  alert('Please enter a valid time and sleep latency.');
+  return;
+ }
+
+ const base=parseTime(time);
+ const cycles=[4,5,6,7];
+ let output=[];
+
+ cycles.forEach(count=>{
+  const duration=count*90;
+  let sleepTime,wakeTime;
+
+  if(mode==='wake'){
+   wakeTime=base;
+   sleepTime=base-duration-latency;
+  }else{
+   sleepTime=base+latency;
+   wakeTime=base+latency+duration;
+  }
+
+  output.push({
+   cycles:count,
+   duration:duration,
+   sleep:formatTime(sleepTime),
+   wake:formatTime(wakeTime),
+   recommended:count===5||count===6
+  });
+ });
+
+ document.getElementById('resultHeading').textContent=
+ mode==='wake'?'Suggested bedtimes':'Suggested wake-up times';
+
+ document.getElementById('resultDescription').textContent=
+ mode==='wake'
+ ?'Choose a bedtime that allows enough time for sleep before your desired wake-up time.'
+ :'Choose a wake-up time based on your approximate sleep-cycle duration.';
+
+ document.getElementById('times').innerHTML=output.map(item=>`
+ <div class="cycle flex justify-between items-center gap-3 flex-wrap">
+  <div>
+   <b>${item.cycles} sleep cycles</b>
+   <p class="muted text-xs">${(item.duration/60).toFixed(1)} hours of sleep</p>
+   ${item.recommended?'<span class="text-xs text-indigo-500 font-bold">Suggested option</span>':''}
+  </div>
+  <div class="text-right">
+   <p class="value">${mode==='wake'?item.sleep:item.wake}</p>
+   <p class="muted text-xs">${mode==='wake'?'Go to bed':'Wake up'}</p>
+  </div>
+ </div>
+ `).join('');
+
+ report=output.map(item=>[
+  item.cycles+' cycles',
+  item.duration+' minutes',
+  item.sleep,
+  item.wake,
+  item.recommended?'Suggested':'Alternative'
+ ]);
+
+ document.getElementById('result').classList.remove('hidden');
+}
+
+function downloadCSV(){
+ if(!report)return;
+ exportCSV('sleep-calculator.csv',[
+  ['Cycles','Sleep Duration','Bedtime','Wake-up Time','Recommendation'],
+  ...report
+ ]);
+}
+
+function downloadPDF(){
+ if(!report)return;
+ exportPDF(
+  'sleep-calculator.pdf',
+  'Sleep Calculator Report',
+  'Suggested sleep and wake-up times using approximate 90-minute cycles',
+  ['Cycles','Duration','Bedtime','Wake-up','Type'],
+  report
+ );
+}
+</script>
+</body>
+</html>
