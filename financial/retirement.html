@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="../js/common.js"></script>
+
+<style>
+:root{
+ --bg:#f4f7fb;--card:#ffffff;--surface:#f1f5f9;--text:#172033;
+ --muted:#64748b;--border:#e2e8f0;--primary:#4f46e5;
+ --primary-light:#eef2ff;--green:#059669;--red:#dc2626;
+ --shadow:0 8px 28px rgba(15,23,42,.06);
+}
+html.dark{
+ --bg:#0b1220;--card:#111c2e;--surface:#1c2a40;--text:#e5edf8;
+ --muted:#9aabc2;--border:#293950;--primary:#818cf8;
+ --primary-light:#252d50;--green:#34d399;--red:#fb7185;
+ --shadow:0 8px 28px rgba(0,0,0,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;transition:.2s}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
+.input{width:100%;padding:12px 13px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);outline:none}
+.input:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 15%,transparent)}
+label{display:block;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:7px}
+.muted{color:var(--muted)}
+.btn{padding:11px 17px;border-radius:10px;font-weight:700;cursor:pointer}
+.btn-primary{background:var(--primary);color:white}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.stat{padding:18px;border-radius:14px;background:var(--surface)}
+.stat-value{font-size:clamp(20px,3vw,27px);font-weight:800;color:var(--text);margin-top:6px}
+table{width:100%;border-collapse:collapse;min-width:550px}
+th,td{padding:12px;text-align:right;border-bottom:1px solid var(--border);font-size:13px}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);background:var(--surface)}
+.progress{height:12px;border-radius:20px;background:var(--surface);overflow:hidden}
+.progress>div{height:100%;background:var(--primary);border-radius:20px}
+</style>
+</head>
+
+<body>
+<header class="border-b" style="border-color:var(--border);background:var(--card)">
+ <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+  <div>
+   <a href="../index.html" class="text-sm muted">← Back to Dashboard</a>
+   <h1 class="text-xl md:text-2xl font-extrabold mt-1">Retirement Calculator</h1>
+  </div>
+  <button id="themeBtn" class="btn btn-secondary">🌙 Theme</button>
+ </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+ <div>
+  <p class="muted text-sm">Plan your retirement corpus and estimate how much you need to invest today.</p>
+ </div>
+
+ <div class="grid lg:grid-cols-2 gap-6">
+  <section class="card p-5 md:p-6">
+   <h2 class="font-bold text-lg mb-5">Your Retirement Details</h2>
+   <div class="grid sm:grid-cols-2 gap-4">
+    <div><label>Current Age</label><input id="age" class="input" type="number" value="30" min="18" max="100"></div>
+    <div><label>Retirement Age</label><input id="retAge" class="input" type="number" value="60" min="19" max="100"></div>
+    <div><label>Life Expectancy</label><input id="lifeAge" class="input" type="number" value="85" min="40" max="120"></div>
+    <div><label>Current Monthly Expenses (₹)</label><input id="expenses" class="input" type="number" value="50000" min="0"></div>
+    <div><label>Existing Retirement Savings (₹)</label><input id="savings" class="input" type="number" value="500000" min="0"></div>
+    <div><label>Expected Inflation (%)</label><input id="inflation" class="input" type="number" value="6" min="0" max="30" step=".1"></div>
+    <div><label>Pre-Retirement Return (%)</label><input id="preReturn" class="input" type="number" value="12" min="0" max="50" step=".1"></div>
+    <div><label>Post-Retirement Return (%)</label><input id="postReturn" class="input" type="number" value="7" min="0" max="50" step=".1"></div>
+   </div>
+   <button onclick="calculate()" class="btn btn-primary w-full mt-6">Calculate Retirement Plan</button>
+  </section>
+
+  <section class="card p-5 md:p-6">
+   <h2 class="font-bold text-lg mb-5">Your Retirement Projection</h2>
+   <div class="grid grid-cols-2 gap-3">
+    <div class="stat col-span-2">
+     <div class="muted text-sm">Required Retirement Corpus</div>
+     <div class="stat-value" id="corpus">₹0</div>
+    </div>
+    <div class="stat">
+     <div class="muted text-sm">Monthly Investment Required</div>
+     <div class="stat-value" id="sip">₹0</div>
+    </div>
+    <div class="stat">
+     <div class="muted text-sm">Retirement Monthly Expense</div>
+     <div class="stat-value" id="futureExpense">₹0</div>
+    </div>
+    <div class="stat">
+     <div class="muted text-sm">Years to Retirement</div>
+     <div class="stat-value" id="years">0</div>
+    </div>
+    <div class="stat">
+     <div class="muted text-sm">Existing Savings Future Value</div>
+     <div class="stat-value" id="futureSavings">₹0</div>
+    </div>
+   </div>
+   <div class="mt-5">
+    <div class="flex justify-between text-sm mb-2">
+     <span class="muted">Corpus already covered</span><b id="coverage">0%</b>
+    </div>
+    <div class="progress"><div id="coverageBar" style="width:0%"></div></div>
+    <p id="message" class="muted text-sm mt-4">Enter your details to view your retirement plan.</p>
+   </div>
+  </section>
+ </div>
+
+ <section class="card p-5">
+  <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+   <div><h2 class="font-bold text-lg">Retirement Projection</h2><p class="muted text-sm">Estimated annual portfolio growth before retirement.</p></div>
+   <div class="flex gap-2">
+    <button onclick="downloadCSV()" class="btn btn-secondary">Export CSV</button>
+    <button onclick="downloadPDF()" class="btn btn-secondary">Export PDF</button>
+   </div>
+  </div>
+  <div class="overflow-x-auto">
+   <table>
+    <thead><tr><th>Year</th><th>Age</th><th>Opening Balance</th><th>Annual Investment</th><th>Closing Balance</th></tr></thead>
+    <tbody id="schedule"></tbody>
+   </table>
+  </div>
+ </section>
+ <p class="muted text-xs">Disclaimer: This calculator provides estimates based on your assumptions. Actual returns, inflation and retirement expenses may vary. It is not investment advice.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'₹'+Math.round(n||0).toLocaleString('en-IN');
+let rows=[],result={};
+
+function calculate(){
+ const age=+$('age').value,ret=+$('retAge').value,life=+$('lifeAge').value;
+ const expense=+$('expenses').value,savings=+$('savings').value;
+ const inf=+$('inflation').value/100,pre=+$('preReturn').value/100,post=+$('postReturn').value/100;
+
+ if(![age,ret,life,expense,savings,inf,pre,post].every(Number.isFinite) ||
+ age<18 || ret<=age || life<=ret || expense<0 || savings<0 || inf<0 || pre<0 || post<0){
+  alert('Please enter valid values. Retirement age must be greater than current age and life expectancy must be greater than retirement age.');return;
+ }
+ const years=ret-age,retYears=life-ret;
+ const futureExpense=expense*Math.pow(1+inf,years);
+ const monthlyRate=post/12;
+ let corpus;
+ if(monthlyRate===0) corpus=futureExpense*12*retYears;
+ else{
+  const annualExpense=futureExpense*12;
+  corpus=annualExpense*(1-Math.pow(1+post,-retYears))/post;
+ }
+ const futureSavings=savings*Math.pow(1+pre,years);
+ const gap=Math.max(0,corpus-futureSavings);
+ const r=pre/12,n=years*12;
+ let sip;
+ if(gap===0)sip=0;
+ else if(r===0)sip=gap/n;
+ else sip=gap*r/(Math.pow(1+r,n)-1);
+
+ $('corpus').textContent=money(corpus);
+ $('sip').textContent=money(sip);
+ $('futureExpense').textContent=money(futureExpense);
+ $('years').textContent=years+' years';
+ $('futureSavings').textContent=money(futureSavings);
+
+ const coverage=Math.min(100,corpus>0?futureSavings/corpus*100:0);
+ $('coverage').textContent=coverage.toFixed(1)+'%';
+ $('coverageBar').style.width=coverage+'%';
+ $('message').textContent=gap===0?'Your projected existing savings may cover the estimated retirement corpus.':`You may need to invest approximately ${money(sip)} every month to reach your target.`;
+
+ rows=[];let balance=savings;
+ for(let y=1;y<=years;y++){
+  const opening=balance,annual=sip*12;
+  balance=opening*(1+pre)+annual*(1+pre/2);
+  rows.push([y,age+y,opening,annual,balance]);
+ }
+ $('schedule').innerHTML=rows.map(r=>`<tr>${r.map((v,i)=>`<td>${i===0||i===1?v:money(v)}</td>`).join('')}</tr>`).join('');
+ result={corpus,sip,futureExpense,futureSavings,years};
+}
+function downloadCSV(){
+ if(!rows.length){alert('Calculate first');return}
+ const data=[['Year','Age','Opening Balance','Annual Investment','Closing Balance'],...rows];
+ const csv=data.map(r=>r.join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='retirement-projection.csv';a.click();URL.revokeObjectURL(a.href);
+}
+function downloadPDF(){
+ if(!rows.length){alert('Calculate first');return}
+ if(!window.jspdf){alert('PDF library unavailable.');return}
+ const doc=new jspdf.jsPDF();
+ doc.text('Retirement Projection',14,15);
+ doc.text('Required Corpus: '+money(result.corpus),14,25);
+ doc.text('Monthly Investment: '+money(result.sip),14,33);
+ doc.autoTable({startY:42,head:[['Year','Age','Opening Balance','Annual Investment','Closing Balance']],body:rows.map(r=>[r[0],r[1],...r.slice(2).map(money)])});
+ doc.save('retirement-projection.pdf');
+}
+function setTheme(t){
+ document.documentElement.classList.toggle('dark',t==='dark');
+ localStorage.setItem('calcsuite-theme',t);
+ $('themeBtn').textContent=t==='dark'?'☀️ Light':'🌙 Dark';
+}
+$('themeBtn').onclick=()=>setTheme(document.documentElement.classList.contains('dark')?'light':'dark');
+setTheme(localStorage.getItem('calcsuite-theme')||localStorage.getItem('theme')||'light');
+calculate();
+</script>
+</body>
+</html>
