@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>401(k) Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--surface:#f1f5f9;--text:#172033;--muted:#64748b;--border:#e2e8f0;--primary:#4f46e5;--green:#059669}
+html.dark{--bg:#0b1220;--card:#111c2e;--surface:#1c2a40;--text:#e5edf8;--muted:#9aabc2;--border:#293950;--primary:#818cf8;--green:#34d399}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:17px}.input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
+label{display:block;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:7px}.muted{color:var(--muted)}
+.btn{padding:11px 16px;border-radius:10px;font-weight:700;cursor:pointer}.primary{background:var(--primary);color:white}.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.stat{padding:17px;background:var(--surface);border-radius:13px}.value{font-size:clamp(20px,3vw,28px);font-weight:800;margin-top:6px}
+table{width:100%;border-collapse:collapse;min-width:600px}td,th{padding:12px;border-bottom:1px solid var(--border);font-size:13px;text-align:right}td:first-child,th:first-child{text-align:left}th{background:var(--surface);color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="border-b" style="background:var(--card);border-color:var(--border)">
+<div class="max-w-7xl mx-auto p-4 flex justify-between items-center">
+<div><a href="../index.html" class="muted text-sm">← Dashboard</a><h1 class="text-2xl font-extrabold mt-1">401(k) Calculator</h1></div>
+<button id="themeBtn" class="btn secondary">🌙 Dark</button>
+</div></header>
+
+<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+<p class="muted text-sm">Estimate how your employee contributions and employer match may grow over time.</p>
+<div class="grid lg:grid-cols-2 gap-6">
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-5">Your 401(k) Details</h2>
+<div class="grid sm:grid-cols-2 gap-4">
+<div><label>Current Age</label><input id="age" class="input" type="number" value="30" min="18" max="100"></div>
+<div><label>Retirement Age</label><input id="retAge" class="input" type="number" value="65" min="19" max="100"></div>
+<div><label>Annual Salary ($)</label><input id="salary" class="input" type="number" value="80000" min="0"></div>
+<div><label>Annual Salary Growth (%)</label><input id="salaryGrowth" class="input" type="number" value="3" min="0" max="30" step=".1"></div>
+<div><label>Employee Contribution (%)</label><input id="employeePct" class="input" type="number" value="10" min="0" max="100" step=".1"></div>
+<div><label>Employer Match (%)</label><input id="matchPct" class="input" type="number" value="50" min="0" max="100" step=".1"></div>
+<div><label>Employer Match Limit (% of Salary)</label><input id="matchLimit" class="input" type="number" value="6" min="0" max="100" step=".1"></div>
+<div><label>Current 401(k) Balance ($)</label><input id="balance" class="input" type="number" value="25000" min="0"></div>
+<div><label>Expected Annual Return (%)</label><input id="return" class="input" type="number" value="7" min="0" max="30" step=".1"></div>
+<div><label>Annual Employee Contribution Limit ($)</label><input id="limit" class="input" type="number" value="24500" min="0"></div>
+</div>
+<button onclick="calculate()" class="btn primary w-full mt-6">Calculate 401(k) Growth</button>
+</section>
+
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-5">Projected Retirement Balance</h2>
+<div class="stat mb-3"><div class="muted text-sm">Estimated 401(k) Balance</div><div class="value" id="future">$0</div></div>
+<div class="grid grid-cols-2 gap-3">
+<div class="stat"><div class="muted text-sm">Your Contributions</div><div class="value" id="employeeTotal">$0</div></div>
+<div class="stat"><div class="muted text-sm">Employer Match</div><div class="value" id="employerTotal">$0</div></div>
+<div class="stat"><div class="muted text-sm">Investment Growth</div><div class="value" id="growth">$0</div></div>
+<div class="stat"><div class="muted text-sm">Years to Retirement</div><div class="value" id="years">0</div></div>
+</div>
+<p class="muted text-sm mt-4" id="insight"></p>
+</section>
+</div>
+
+<section class="card p-5">
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+<div><h2 class="font-bold text-lg">Yearly Growth Projection</h2><p class="muted text-sm">Estimated year-end account balance.</p></div>
+<div class="flex gap-2"><button onclick="csv()" class="btn secondary">CSV</button><button onclick="pdf()" class="btn secondary">PDF</button></div>
+</div>
+<div class="overflow-x-auto"><table><thead><tr><th>Year</th><th>Age</th><th>Salary</th><th>Employee Contribution</th><th>Employer Match</th><th>Closing Balance</th></tr></thead><tbody id="schedule"></tbody></table></div>
+</section>
+<p class="muted text-xs">Disclaimer: This is a hypothetical projection, not financial or tax advice. Actual contribution limits, catch-up contributions, vesting, employer plan rules, fees, investment returns and tax treatment vary. Confirm current IRS limits and your employer plan rules.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'$'+Math.round(n).toLocaleString('en-US');
+let rows=[],summary={};
+
+function calculate(){
+ const age=+$('age').value,retAge=+$('retAge').value;
+ const salary=+$('salary').value,salaryGrowth=+$('salaryGrowth').value/100;
+ const employeePct=+$('employeePct').value/100,matchPct=+$('matchPct').value/100;
+ const matchLimit=+$('matchLimit').value/100,balance=+$('balance').value;
+ const rate=+$('return').value/100,limit=+$('limit').value;
+ const vals=[age,retAge,salary,salaryGrowth,employeePct,matchPct,matchLimit,balance,rate,limit];
+ if(!vals.every(Number.isFinite)||age<18||retAge<=age||retAge>100||salary<0||salaryGrowth<0||employeePct<0||employeePct>1||matchPct<0||matchPct>1||matchLimit<0||matchLimit>1||balance<0||rate<0||limit<0){
+  alert('Please enter valid values.');return;
+ }
+ const years=retAge-age;
+ let fund=balance,employeeTotal=0,employerTotal=0,rowsData=[];
+ for(let y=1;y<=years;y++){
+  const annualSalary=salary*Math.pow(1+salaryGrowth,y-1);
+  const employee=Math.min(annualSalary*employeePct,limit);
+  const eligibleMatch=Math.min(annualSalary*employeePct,annualSalary*matchLimit);
+  const employer=eligibleMatch*matchPct;
+  const opening=fund;
+  fund=opening*(1+rate)+employee+employer;
+  employeeTotal+=employee;employerTotal+=employer;
+  rowsData.push([y,age+y,annualSalary,employee,employer,fund]);
+ }
+ const totalContributions=employeeTotal+employerTotal;
+ const growth=fund-balance-totalContributions;
+ $('future').textContent=money(fund);
+ $('employeeTotal').textContent=money(employeeTotal);
+ $('employerTotal').textContent=money(employerTotal);
+ $('growth').textContent=money(growth);
+ $('years').textContent=years;
+ $('insight').textContent=`Your projected balance includes ${money(employeeTotal)} in your contributions and ${money(employerTotal)} in employer matching contributions.`;
+ rows=rowsData;summary={fund,employeeTotal,employerTotal,growth};
+ $('schedule').innerHTML=rows.map(r=>`<tr>${r.map((v,i)=>`<td>${i<2? v:money(v)}</td>`).join('')}</tr>`).join('');
+}
+function csv(){
+ if(!rows.length)return;
+ const s='Year,Age,Salary,Employee Contribution,Employer Match,Closing Balance\n'+rows.map(r=>r.join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'text/csv'}));a.download='401k-projection.csv';a.click();
+}
+function pdf(){
+ if(!rows.length)return;
+ if(!window.jspdf){alert('PDF library unavailable');return}
+ const d=new jspdf.jsPDF();d.text('401(k) Projection Report',14,15);
+ d.text('Projected Balance: '+money(summary.fund),14,25);
+ d.autoTable({startY:32,head:[['Year','Age','Salary','Employee','Employer','Balance']],body:rows.map(r=>[r[0],r[1],...r.slice(2).map(money)])});
+ d.save('401k-projection.pdf');
+}
+function theme(t){document.documentElement.classList.toggle('dark',t==='dark');localStorage.setItem('calcsuite-theme',t);$('themeBtn').textContent=t==='dark'?'☀️ Light':'🌙 Dark'}
+$('themeBtn').onclick=()=>theme(document.documentElement.classList.contains('dark')?'light':'dark');
+theme(localStorage.getItem('calcsuite-theme')||'light');calculate();
+</script>
+</body>
+</html>
