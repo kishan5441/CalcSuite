@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Water Intake Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#0284c7}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px}
+input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;color:var(--muted)}
+.btn{padding:12px 17px;border-radius:10px;background:var(--accent);color:white;font-weight:700}
+.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.muted{color:var(--muted)}
+.value{font-size:35px;font-weight:800;color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="max-w-5xl mx-auto p-4 flex justify-between">
+<a href="../index.html" class="font-bold text-sky-600">← CalcSuite</a>
+<button id="themeToggle" class="btn secondary">☼ Theme</button>
+</header>
+
+<main class="max-w-5xl mx-auto p-4 space-y-5">
+<section>
+<p class="text-sm font-bold text-sky-600">HEALTH & FITNESS</p>
+<h1 class="text-3xl font-extrabold mt-1">Water Intake Calculator</h1>
+<p class="muted mt-2">Estimate your daily water needs and create a hydration schedule.</p>
+</section>
+
+<section class="card">
+<h2 class="font-bold text-lg mb-4">Your details</h2>
+<div class="grid sm:grid-cols-2 gap-4">
+<div>
+<label>Body weight (kg)</label>
+<input id="weight" type="number" min="1" value="70">
+</div>
+<div>
+<label>Age (years)</label>
+<input id="age" type="number" min="1" max="120" value="30">
+</div>
+<div>
+<label>Daily activity level</label>
+<select id="activity">
+<option value="0">Low activity</option>
+<option value="350">Moderate activity</option>
+<option value="600">High activity</option>
+</select>
+</div>
+<div>
+<label>Climate</label>
+<select id="climate">
+<option value="0">Normal climate</option>
+<option value="300">Hot climate</option>
+<option value="500">Very hot climate</option>
+</select>
+</div>
+<div>
+<label>Daily exercise duration (minutes)</label>
+<input id="exercise" type="number" min="0" max="600" value="30">
+</div>
+<div>
+<label>Wake-up time</label>
+<input id="wake" type="time" value="07:00">
+</div>
+<div>
+<label>Sleep time</label>
+<input id="sleep" type="time" value="23:00">
+</div>
+</div>
+<button class="btn w-full mt-5" onclick="calculate()">Calculate Water Intake</button>
+</section>
+
+<section id="result" class="hidden space-y-4">
+<div class="card text-center">
+<p class="muted text-sm">Estimated daily water target</p>
+<div class="value" id="total">--</div>
+<p class="muted text-sm">Litres per day</p>
+<div class="grid grid-cols-2 gap-3 mt-5 text-left">
+<div class="p-3 rounded-xl" style="background:var(--bg)">
+<p class="muted text-xs">Base estimate</p>
+<b id="base">--</b>
+</div>
+<div class="p-3 rounded-xl" style="background:var(--bg)">
+<p class="muted text-xs">Activity & climate adjustment</p>
+<b id="extra">--</b>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h3 class="font-bold text-lg mb-3">Suggested hydration schedule</h3>
+<div id="schedule" class="space-y-3"></div>
+</div>
+
+<div class="card">
+<h3 class="font-bold mb-2">Your hydration target</h3>
+<p class="muted text-sm" id="summary"></p>
+<div class="flex flex-wrap gap-2 mt-4">
+<button class="btn" onclick="downloadCSV()">Export CSV</button>
+<button class="btn secondary" onclick="downloadPDF()">Export PDF</button>
+</div>
+</div>
+</section>
+
+<div class="card text-sm muted">
+<strong>Health note:</strong> This is a general hydration estimate, not a medical prescription. Individual needs vary with food intake, health, pregnancy, medications and environment. People with kidney, heart or fluid-balance conditions should follow their clinician's advice. Do not force excessive water intake.
+</div>
+</main>
+
+<script>
+initTheme();
+
+let report=null;
+
+function calculate(){
+ const weight=getNumber('weight');
+ const age=getNumber('age');
+ const activity=getNumber('activity');
+ const climate=getNumber('climate');
+ const exercise=getNumber('exercise');
+
+ if(weight<=0||age<1||age>120||exercise<0||exercise>600){
+  alert('Please enter valid details.');
+  return;
+ }
+
+ // General starting estimate: 30-35 ml/kg.
+ const base=weight*(age<18?35:30);
+ const exerciseExtra=Math.ceil(exercise/30)*250;
+ const extra=activity+climate+exerciseExtra;
+ const total=base+extra;
+ const litres=total/1000;
+
+ document.getElementById('total').textContent=litres.toFixed(2)+' L';
+ document.getElementById('base').textContent=Math.round(base)+' ml';
+ document.getElementById('extra').textContent=Math.round(extra)+' ml';
+
+ const wake=document.getElementById('wake').value||'07:00';
+ const sleep=document.getElementById('sleep').value||'23:00';
+
+ const start=new Date('2000-01-01T'+wake+':00');
+ let end=new Date('2000-01-01T'+sleep+':00');
+ if(end<=start)end.setDate(end.getDate()+1);
+
+ const hours=(end-start)/3600000;
+ const count=8;
+ const interval=hours/count;
+ const amount=Math.round(total/count);
+
+ const schedule=[];
+ for(let i=0;i<count;i++){
+  const t=new Date(start.getTime()+interval*i*3600000);
+  schedule.push({
+   time:t.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+   amount:amount
+  });
+ }
+
+ document.getElementById('schedule').innerHTML=schedule.map((s,i)=>`
+ <div class="flex justify-between items-center p-3 rounded-xl" style="background:var(--bg)">
+  <div><b>${s.time}</b><p class="muted text-xs">Hydration ${i+1}</p></div>
+  <b class="text-sky-600">${s.amount} ml</b>
+ </div>
+ `).join('');
+
+ document.getElementById('summary').textContent=
+ 'Estimated target: '+Math.round(total)+' ml ('+litres.toFixed(2)+' litres) daily. This is a starting estimate, not a strict requirement.';
+
+ report=[
+  ['Weight',weight+' kg'],
+  ['Age',age+' years'],
+  ['Base estimate',Math.round(base)+' ml'],
+  ['Activity and climate adjustment',Math.round(extra)+' ml'],
+  ['Total estimated daily water',Math.round(total)+' ml'],
+  ['Daily target',litres.toFixed(2)+' litres']
+ ];
+
+ document.getElementById('result').classList.remove('hidden');
+}
+
+function downloadCSV(){
+ if(!report)return;
+ exportCSV('water-intake-report.csv',[
+  ['Metric','Value'],
+  ...report
+ ]);
+}
+
+function downloadPDF(){
+ if(!report)return;
+ exportPDF('water-intake-report.pdf','Water Intake Report',
+ 'Estimated daily hydration requirement',
+ ['Metric','Value'],report);
+}
+</script>
+</body>
+</html>
