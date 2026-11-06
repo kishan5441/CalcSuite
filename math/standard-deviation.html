@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Standard Deviation Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#64748b;--border:#e5eaf2;--accent:#6366f1}
+body.dark{--bg:#0b1120;--card:#151e30;--text:#f1f5f9;--muted:#94a3b8;--border:#29364b;--accent:#818cf8}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px}
+.muted{color:var(--muted)}
+input,textarea,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px;width:100%;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:white;padding:11px 18px;border-radius:10px;font-weight:600}
+.btn-secondary{background:var(--bg);border:1px solid var(--border);padding:10px 15px;border-radius:10px}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:13px;padding:15px}
+</style>
+</head>
+<body>
+<header class="border-b" style="border-color:var(--border)">
+<div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+<a href="../index.html" class="font-bold text-xl">← CalcSuite</a>
+<button id="themeToggle" class="btn-secondary">🌙 Theme</button>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8">
+<div class="mb-7">
+<div class="text-sm muted mb-2">MATH CALCULATORS / STATISTICS</div>
+<h1 class="text-3xl md:text-4xl font-bold">Standard Deviation Calculator</h1>
+<p class="muted mt-2">Calculate population and sample standard deviation, variance, mean and data distribution.</p>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+<section class="card p-5 lg:col-span-1">
+<h2 class="font-bold text-lg mb-4">Enter Your Data</h2>
+
+<label class="text-sm font-semibold block mb-2">Dataset</label>
+<textarea id="dataset" rows="6" placeholder="Enter numbers separated by commas, spaces or new lines">12, 15, 18, 20, 22, 25, 28</textarea>
+
+<div class="mt-4">
+<label class="text-sm font-semibold block mb-2">Calculation Type</label>
+<select id="type">
+<option value="population">Population Standard Deviation</option>
+<option value="sample">Sample Standard Deviation</option>
+</select>
+</div>
+
+<div class="mt-5 flex flex-wrap gap-2">
+<button class="btn" onclick="calculate()">Calculate</button>
+<button class="btn-secondary" onclick="clearAll()">Clear</button>
+<button class="btn-secondary" onclick="loadExample()">Example</button>
+</div>
+
+<div class="mt-6 p-4 rounded-xl" style="background:var(--bg)">
+<h3 class="font-semibold mb-2">Formula</h3>
+<p class="text-sm muted">Population:</p>
+<p class="font-semibold mb-3">σ = √(Σ(x − μ)² / N)</p>
+<p class="text-sm muted">Sample:</p>
+<p class="font-semibold">s = √(Σ(x − x̄)² / (n − 1))</p>
+</div>
+</section>
+
+<section class="lg:col-span-2 space-y-5">
+<div id="results" class="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+<div class="stat"><p class="muted text-sm">Standard Deviation</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Mean</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Variance</p><h2 class="text-2xl font-bold mt-2">—</h2></div>
+</div>
+
+<div class="card p-5">
+<h2 class="font-bold text-lg mb-4">Data Distribution</h2>
+<div style="height:280px"><canvas id="distributionChart"></canvas></div>
+</div>
+
+<div class="card p-5">
+<h2 class="font-bold text-lg mb-4">Calculation Details</h2>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-left">
+<thead><tr class="border-b" style="border-color:var(--border)">
+<th class="py-3">Value (x)</th>
+<th class="py-3">Deviation (x − mean)</th>
+<th class="py-3">Squared Deviation</th>
+</tr></thead>
+<tbody id="details"><tr><td colspan="3" class="py-4 muted">Enter your dataset and calculate.</td></tr></tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</main>
+
+<script>
+let chart=null;
+
+function calculate(){
+ const raw=document.getElementById('dataset').value.trim();
+ const values=raw.split(/[\s,;]+/).filter(Boolean).map(Number);
+
+ if(!values.length || values.some(v=>!Number.isFinite(v))){
+  alert('Please enter valid numbers only.');return;
+ }
+ const type=document.getElementById('type').value;
+ const n=values.length;
+ if(type==='sample' && n<2){
+  alert('Sample standard deviation requires at least 2 values.');return;
+ }
+
+ const sum=values.reduce((a,b)=>a+b,0);
+ const mean=sum/n;
+ const rows=values.map(x=>({x,d:x-mean,sq:(x-mean)**2}));
+ const squaredSum=rows.reduce((a,b)=>a+b.sq,0);
+ const variance=squaredSum/(type==='population'?n:n-1);
+ const sd=Math.sqrt(variance);
+ const sorted=[...values].sort((a,b)=>a-b);
+ const median=n%2?sorted[(n-1)/2]:(sorted[n/2-1]+sorted[n/2])/2;
+ const min=sorted[0],max=sorted[n-1];
+ const range=max-min;
+
+ const counts={};
+ values.forEach(v=>counts[v]=(counts[v]||0)+1);
+ const maxFreq=Math.max(...Object.values(counts));
+ const modes=maxFreq===1?[]:Object.keys(counts).filter(k=>counts[k]===maxFreq);
+
+ const stats=[
+  ['Standard Deviation',sd],
+  ['Mean',mean],
+  ['Variance',variance],
+  ['Total Values',n],
+  ['Median',median],
+  ['Range',range],
+  ['Minimum',min],
+  ['Maximum',max],
+  ['Sum',sum],
+  ['Mode',modes.length?modes.join(', '):'No mode']
+ ];
+
+ document.getElementById('results').innerHTML=stats.map(([label,value],i)=>`
+ <div class="stat">
+ <p class="muted text-sm">${label}</p>
+ <h2 class="text-xl md:text-2xl font-bold mt-2 break-words">${typeof value==='number'?Number(value.toFixed(6)):value}</h2>
+ </div>`).join('');
+
+ document.getElementById('details').innerHTML=rows.map(r=>`
+ <tr class="border-b" style="border-color:var(--border)">
+ <td class="py-3">${r.x}</td>
+ <td class="py-3">${r.d.toFixed(4)}</td>
+ <td class="py-3">${r.sq.toFixed(4)}</td>
+ </tr>`).join('');
+
+ drawChart(values,mean,sd);
+}
+
+function drawChart(values,mean,sd){
+ const ctx=document.getElementById('distributionChart');
+ if(chart)chart.destroy();
+
+ const sorted=[...values].sort((a,b)=>a-b);
+ const labels=sorted.map((_,i)=>`Value ${i+1}`);
+
+ chart=new Chart(ctx,{
+  type:'bar',
+  data:{
+   labels,
+   datasets:[
+    {label:'Data Values',data:sorted,backgroundColor:'#818cf8',borderRadius:6},
+    {type:'line',label:'Mean',data:sorted.map(()=>mean),borderColor:'#f59e0b',borderWidth:2,pointRadius:0,borderDash:[6,4]},
+    {type:'line',label:'+1 SD',data:sorted.map(()=>mean+sd),borderColor:'#10b981',borderWidth:2,pointRadius:0,borderDash:[4,4]},
+    {type:'line',label:'-1 SD',data:sorted.map(()=>mean-sd),borderColor:'#ef4444',borderWidth:2,pointRadius:0,borderDash:[4,4]}
+   ]
+  },
+  options:{
+   responsive:true,maintainAspectRatio:false,
+   plugins:{legend:{position:'bottom'}},
+   scales:{y:{beginAtZero:false}}
+  }
+ });
+}
+
+function clearAll(){
+ document.getElementById('dataset').value='';
+ document.getElementById('results').innerHTML='';
+ document.getElementById('details').innerHTML='';
+ if(chart){chart.destroy();chart=null;}
+}
+
+function loadExample(){
+ document.getElementById('dataset').value='12, 15, 18, 20, 22, 25, 28';
+ calculate();
+}
+
+document.getElementById('themeToggle').addEventListener('click',()=>{
+ document.body.classList.toggle('dark');
+ localStorage.setItem('calcsuite-theme',document.body.classList.contains('dark')?'dark':'light');
+});
+if(localStorage.getItem('calcsuite-theme')==='dark')document.body.classList.add('dark');
+
+calculate();
+</script>
+</body>
+</html>
