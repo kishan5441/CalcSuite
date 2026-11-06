@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Credit Card Payoff Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--surface:#f1f5f9;--text:#172033;--muted:#64748b;--border:#e2e8f0;--primary:#4f46e5;--green:#059669;--red:#dc2626}
+html.dark{--bg:#0b1220;--card:#111c2e;--surface:#1c2a40;--text:#e5edf8;--muted:#9aabc2;--border:#293950;--primary:#818cf8;--green:#34d399;--red:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:17px}.input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
+label{display:block;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:7px}.muted{color:var(--muted)}
+.btn{padding:11px 16px;border-radius:10px;font-weight:700;cursor:pointer}.primary{background:var(--primary);color:white}.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.stat{padding:17px;background:var(--surface);border-radius:13px}.value{font-size:clamp(20px,3vw,27px);font-weight:800;margin-top:6px}
+table{width:100%;border-collapse:collapse;min-width:600px}td,th{padding:12px;border-bottom:1px solid var(--border);font-size:13px;text-align:right}td:first-child,th:first-child{text-align:left}th{background:var(--surface);color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="border-b" style="background:var(--card);border-color:var(--border)">
+<div class="max-w-7xl mx-auto p-4 flex justify-between items-center">
+<div><a href="../index.html" class="muted text-sm">← Dashboard</a><h1 class="text-2xl font-extrabold mt-1">Credit Card Payoff</h1></div>
+<button id="themeBtn" class="btn secondary">🌙 Dark</button>
+</div></header>
+
+<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+<p class="muted text-sm">Estimate how long it will take to clear your credit card debt and how much interest you will pay.</p>
+<div class="grid lg:grid-cols-2 gap-6">
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-5">Card Details</h2>
+<div class="space-y-4">
+<div><label>Outstanding Balance (₹)</label><input id="balance" class="input" type="number" value="100000" min="0"></div>
+<div><label>Annual Interest Rate / APR (%)</label><input id="apr" class="input" type="number" value="36" min="0" max="100"></div>
+<div><label>Monthly Payment (₹)</label><input id="payment" class="input" type="number" value="10000" min="0"></div>
+<div><label>Extra Monthly Payment (₹)</label><input id="extra" class="input" type="number" value="0" min="0"></div>
+<div><label>One-time Extra Payment (₹)</label><input id="lump" class="input" type="number" value="0" min="0"></div>
+</div>
+<button onclick="calculate()" class="btn primary w-full mt-6">Calculate Payoff</button>
+</section>
+
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-5">Payoff Summary</h2>
+<div class="stat mb-3"><div class="muted text-sm">Total Payoff Time</div><div class="value" id="duration">—</div></div>
+<div class="grid grid-cols-2 gap-3">
+<div class="stat"><div class="muted text-sm">Total Interest</div><div class="value" id="interest">₹0</div></div>
+<div class="stat"><div class="muted text-sm">Total Paid</div><div class="value" id="total">₹0</div></div>
+<div class="stat"><div class="muted text-sm">Monthly Payment</div><div class="value" id="monthly">₹0</div></div>
+<div class="stat"><div class="muted text-sm">Payoff Months</div><div class="value" id="months">0</div></div>
+</div>
+<p class="muted text-sm mt-4" id="message"></p>
+</section>
+</div>
+
+<section class="card p-5">
+<div class="flex justify-between items-center flex-wrap gap-3 mb-4">
+<h2 class="font-bold text-lg">Monthly Payoff Schedule</h2>
+<div class="flex gap-2"><button onclick="csv()" class="btn secondary">CSV</button><button onclick="pdf()" class="btn secondary">PDF</button></div>
+</div>
+<div class="overflow-x-auto"><table><thead><tr><th>Month</th><th>Opening Balance</th><th>Interest</th><th>Payment</th><th>Principal Paid</th><th>Closing Balance</th></tr></thead><tbody id="schedule"></tbody></table></div>
+</section>
+<p class="muted text-xs">Assumes monthly interest accrual at APR/12, no new purchases, fees, penalties or changing APR. Actual card issuers may calculate interest daily.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+let rows=[],summary={};
+
+function calculate(){
+ const balance=+$('balance').value,apr=+$('apr').value/100;
+ const payment=+$('payment').value,extra=+$('extra').value,lump=+$('lump').value;
+ if(![balance,apr,payment,extra,lump].every(Number.isFinite)||balance<0||apr<0||payment<0||extra<0||lump<0){
+  alert('Enter valid non-negative values.');return;
+ }
+ if(balance===0){alert('Outstanding balance is already zero.');return}
+ let remaining=Math.max(0,balance-lump),totalInterest=0,totalPaid=lump;
+ const monthlyRate=apr/12,monthlyPayment=payment+extra;
+ rows=[];
+ if(monthlyPayment<=0){alert('Enter a monthly payment greater than zero.');return}
+ if(monthlyRate>0&&monthlyPayment<=remaining*monthlyRate){alert('Payment is too low to cover monthly interest. Increase your payment.');return}
+ for(let month=1;remaining>.005&&month<=1200;month++){
+  const opening=remaining,interest=opening*monthlyRate;
+  const due=opening+interest;
+  const paid=Math.min(monthlyPayment,due);
+  const principal=paid-interest;
+  remaining=Math.max(0,due-paid);
+  totalInterest+=interest;totalPaid+=paid;
+  rows.push([month,opening,interest,paid,principal,remaining]);
+ }
+ if(remaining>.005){alert('Payoff period is too long to calculate. Increase monthly payment.');return}
+ const months=rows.length;
+ $('duration').textContent=Math.floor(months/12)+' years '+months%12+' months';
+ $('interest').textContent=money(totalInterest);
+ $('total').textContent=money(totalPaid);
+ $('monthly').textContent=money(monthlyPayment);
+ $('months').textContent=months;
+ $('message').textContent=`You may clear this balance in ${months} months and pay approximately ${money(totalInterest)} in interest.`;
+ $('schedule').innerHTML=rows.map(r=>`<tr>${r.map((v,i)=>`<td>${i===0?v:money(v)}</td>`).join('')}</tr>`).join('');
+ summary={balance,apr,totalInterest,totalPaid,months};
+}
+function csv(){
+ if(!rows.length)return;
+ const content='Month,Opening Balance,Interest,Payment,Principal Paid,Closing Balance\n'+rows.map(r=>r.join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:'text/csv'}));a.download='credit-card-payoff.csv';a.click();
+}
+function pdf(){
+ if(!rows.length)return;
+ if(!window.jspdf){alert('PDF library unavailable');return}
+ const d=new jspdf.jsPDF();d.text('Credit Card Payoff Schedule',14,15);
+ d.text('Total Interest: '+money(summary.totalInterest),14,25);
+ d.autoTable({startY:32,head:[['Month','Opening','Interest','Payment','Principal','Closing']],body:rows.map(r=>[r[0],...r.slice(1).map(money)])});
+ d.save('credit-card-payoff.pdf');
+}
+function theme(t){document.documentElement.classList.toggle('dark',t==='dark');localStorage.setItem('calcsuite-theme',t);$('themeBtn').textContent=t==='dark'?'☀️ Light':'🌙 Dark'}
+$('themeBtn').onclick=()=>theme(document.documentElement.classList.contains('dark')?'light':'dark');
+theme(localStorage.getItem('calcsuite-theme')||'light');calculate();
+</script>
+</body>
+</html>
