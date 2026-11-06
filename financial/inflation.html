@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inflation Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{
+--bg:#f4f7fb;--card:#fff;--surface:#f1f5f9;--text:#172033;--muted:#64748b;
+--border:#e2e8f0;--primary:#4f46e5;--green:#059669;--red:#dc2626;--shadow:0 8px 28px rgba(15,23,42,.06)
+}
+html.dark{
+--bg:#0b1220;--card:#111c2e;--surface:#1c2a40;--text:#e5edf8;--muted:#9aabc2;
+--border:#293950;--primary:#818cf8;--green:#34d399;--red:#fb7185;--shadow:0 8px 28px rgba(0,0,0,.18)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
+.input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);outline:none}
+.input:focus{border-color:var(--primary)}
+label{display:block;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:7px}
+.muted{color:var(--muted)}
+.btn{padding:11px 17px;border-radius:10px;font-weight:700;cursor:pointer}
+.primary{background:var(--primary);color:white}
+.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.stat{padding:18px;background:var(--surface);border-radius:14px}
+.value{font-size:clamp(21px,3vw,29px);font-weight:800;margin-top:7px}
+table{width:100%;border-collapse:collapse;min-width:500px}
+th,td{padding:12px;border-bottom:1px solid var(--border);text-align:right;font-size:13px}
+th:first-child,td:first-child{text-align:left}
+th{background:var(--surface);color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="border-b" style="background:var(--card);border-color:var(--border)">
+ <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+  <div><a href="../index.html" class="muted text-sm">← Back to Dashboard</a><h1 class="text-xl md:text-2xl font-extrabold mt-1">Inflation Calculator</h1></div>
+  <button id="themeBtn" class="btn secondary">🌙 Theme</button>
+ </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+ <p class="muted text-sm">Understand how inflation changes the purchasing power of your money over time.</p>
+
+ <div class="grid lg:grid-cols-2 gap-6">
+  <section class="card p-5 md:p-6">
+   <h2 class="font-bold text-lg mb-5">Calculation Details</h2>
+   <div class="space-y-4">
+    <div><label>Current Amount (₹)</label><input id="amount" type="number" class="input" value="100000" min="0"></div>
+    <div><label>Annual Inflation Rate (%)</label><input id="rate" type="number" class="input" value="6" min="0" max="100" step=".1"></div>
+    <div><label>Number of Years</label><input id="years" type="number" class="input" value="10" min="0" max="100"></div>
+    <div>
+     <label>Calculation Type</label>
+     <select id="mode" class="input">
+      <option value="future">Future Cost of Today's Money</option>
+      <option value="present">Today's Value of Future Money</option>
+     </select>
+    </div>
+   </div>
+   <button onclick="calculate()" class="btn primary w-full mt-6">Calculate Inflation Impact</button>
+  </section>
+
+  <section class="card p-5 md:p-6">
+   <h2 class="font-bold text-lg mb-5">Your Results</h2>
+   <div class="stat mb-3">
+    <div class="muted text-sm" id="mainLabel">Future Cost</div>
+    <div class="value" id="mainResult">₹0</div>
+   </div>
+   <div class="grid grid-cols-2 gap-3">
+    <div class="stat"><div class="muted text-sm">Inflation Impact</div><div class="value" id="impact">₹0</div></div>
+    <div class="stat"><div class="muted text-sm">Purchasing Power</div><div class="value" id="power">100%</div></div>
+    <div class="stat col-span-2"><div class="muted text-sm">Total Price Increase / Decrease</div><div class="value" id="percentage">0%</div></div>
+   </div>
+   <p class="muted text-sm mt-4" id="insight"></p>
+  </section>
+ </div>
+
+ <section class="card p-5">
+  <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+   <div><h2 class="font-bold text-lg">Year-wise Inflation Projection</h2><p class="muted text-sm">See how the amount changes each year.</p></div>
+   <div class="flex gap-2"><button class="btn secondary" onclick="downloadCSV()">Export CSV</button><button class="btn secondary" onclick="downloadPDF()">Export PDF</button></div>
+  </div>
+  <div class="overflow-x-auto">
+   <table><thead><tr><th>Year</th><th>Inflation Rate</th><th>Projected Amount</th><th>Change from Today</th></tr></thead><tbody id="schedule"></tbody></table>
+  </div>
+ </section>
+ <p class="muted text-xs">Disclaimer: Inflation rates are estimates. Actual inflation varies across products, services and time periods.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'₹'+Math.round(n||0).toLocaleString('en-IN');
+let rows=[],result={};
+
+function calculate(){
+ const amount=+$('amount').value,rate=+$('rate').value/100,years=+$('years').value,mode=$('mode').value;
+ if(!Number.isFinite(amount)||!Number.isFinite(rate)||!Number.isFinite(years)||amount<0||rate<0||years<0||years>100){
+  alert('Please enter valid non-negative values.');return;
+ }
+ const factor=Math.pow(1+rate,years);
+ const future=mode==='future'?amount*factor:amount;
+ const present=mode==='present'?amount/factor:amount;
+ const impact=mode==='future'?future-amount:amount-present;
+ const purchasingPower=mode==='future'?100/factor*100:100/factor*100;
+ const pct=(factor-1)*100;
+
+ $('mainLabel').textContent=mode==='future'?'Estimated Future Cost':'Today's Purchasing Power';
+ $('mainResult').textContent=money(mode==='future'?future:present);
+ $('impact').textContent=money(impact);
+ $('power').textContent=purchasingPower.toFixed(1)+'%';
+ $('percentage').textContent=pct.toFixed(2)+'%';
+ $('insight').textContent=mode==='future'
+ ?`At ${(rate*100).toFixed(2)}% annual inflation, something costing ${money(amount)} today may cost ${money(future)} after ${years} years.`
+ :`${money(amount)} received after ${years} years may have the purchasing power of approximately ${money(present)} today.`;
+
+ rows=[];
+ for(let y=0;y<=years;y++){
+  const value=mode==='future'?amount*Math.pow(1+rate,y):amount/Math.pow(1+rate,y);
+  rows.push([y,(rate*100).toFixed(2)+'%',value,value-amount]);
+ }
+ $('schedule').innerHTML=rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${money(r[2])}</td><td>${money(r[3])}</td></tr>`).join('');
+ result={amount,rate,years,mode};
+}
+function downloadCSV(){
+ if(!rows.length){alert('Calculate first');return}
+ const data=[['Year','Inflation Rate','Projected Amount','Change from Today'],...rows];
+ const csv=data.map(r=>r.join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='inflation-projection.csv';a.click();URL.revokeObjectURL(a.href);
+}
+function downloadPDF(){
+ if(!rows.length){alert('Calculate first');return}
+ if(!window.jspdf){alert('PDF library unavailable.');return}
+ const doc=new jspdf.jsPDF();
+ doc.text('Inflation Calculator Report',14,15);
+ doc.text('Starting Amount: '+money(result.amount),14,25);
+ doc.text('Inflation Rate: '+(result.rate*100).toFixed(2)+'%',14,33);
+ doc.autoTable({startY:42,head:[['Year','Inflation Rate','Projected Amount','Change from Today']],body:rows.map(r=>[r[0],r[1],money(r[2]),money(r[3])])});
+ doc.save('inflation-report.pdf');
+}
+function setTheme(t){
+ document.documentElement.classList.toggle('dark',t==='dark');
+ localStorage.setItem('calcsuite-theme',t);
+ $('themeBtn').textContent=t==='dark'?'☀️ Light':'🌙 Dark';
+}
+$('themeBtn').onclick=()=>setTheme(document.documentElement.classList.contains('dark')?'light':'dark');
+setTheme(localStorage.getItem('calcsuite-theme')||localStorage.getItem('theme')||'light');
+calculate();
+</script>
+</body>
+</html>
