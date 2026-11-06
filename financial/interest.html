@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interest Calculator — CalcHub</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="../js/common.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif}
+.card{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:22px}
+.dark .card{background:#11131c;border-color:#ffffff12}
+.field{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;outline:none}
+.dark .field{border-color:#ffffff20;color:white}
+.field:focus{border-color:#6366f1;box-shadow:0 0 0 3px #6366f120}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+.btn{padding:11px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.primary{background:#4f46e5;color:white}
+.secondary{border:1px solid #cbd5e1}
+.dark .secondary{border-color:#ffffff25}
+.result{background:#eef2ff;border-radius:14px;padding:18px}
+.dark .result{background:#6366f115}
+.metric{padding:14px;border-radius:12px;background:#f8fafc}
+.dark .metric{background:#ffffff08}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:11px;text-align:right;border-bottom:1px solid #e2e8f0}
+th:first-child,td:first-child{text-align:left}
+.dark th,.dark td{border-color:#ffffff15}
+</style>
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#08090d] dark:text-white">
+
+<header class="border-b border-slate-200 dark:border-white/10">
+<div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+<div>
+<h1 class="text-xl font-extrabold">📈 Interest Calculator</h1>
+<p class="text-xs text-slate-500 mt-1">Calculate simple and compound interest</p>
+</div>
+<div class="flex gap-2">
+<a href="../index.html" class="btn secondary">← Dashboard</a>
+<button class="btn secondary" onclick="document.documentElement.classList.toggle('dark')">◐</button>
+</div>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4 py-8">
+
+<div class="grid lg:grid-cols-2 gap-6">
+
+<section class="card">
+<h2 class="text-lg font-bold mb-5">Investment Details</h2>
+
+<div class="space-y-4">
+
+<div>
+<label>Currency</label>
+<select id="currency" class="field" onchange="calculate()">
+<option value="INR">INR — ₹</option>
+<option value="USD">USD — $</option>
+<option value="EUR">EUR — €</option>
+<option value="GBP">GBP — £</option>
+</select>
+</div>
+
+<div>
+<label>Principal Amount</label>
+<input id="principal" class="field" type="number" min="0" value="100000" oninput="calculate()">
+</div>
+
+<div>
+<label>Annual Interest Rate (%)</label>
+<input id="rate" class="field" type="number" min="0" step="0.01" value="8" oninput="calculate()">
+</div>
+
+<div>
+<label>Time Period (Years)</label>
+<input id="years" class="field" type="number" min="0.01" max="100" step="0.1" value="5" oninput="calculate()">
+</div>
+
+<div>
+<label>Interest Type</label>
+<select id="type" class="field" onchange="calculate()">
+<option value="compound">Compound Interest</option>
+<option value="simple">Simple Interest</option>
+</select>
+</div>
+
+<div id="frequencyBox">
+<label>Compounding Frequency</label>
+<select id="frequency" class="field" onchange="calculate()">
+<option value="1">Annually</option>
+<option value="2">Semi-annually</option>
+<option value="4">Quarterly</option>
+<option value="12" selected>Monthly</option>
+<option value="365">Daily</option>
+</select>
+</div>
+
+</div>
+
+<div id="error" class="hidden mt-4 bg-red-50 text-red-600 rounded-lg p-3 text-sm"></div>
+
+<div class="flex gap-2 mt-6">
+<button class="btn primary flex-1" onclick="calculate()">Calculate Interest</button>
+<button class="btn secondary" onclick="resetCalculator()">Reset</button>
+</div>
+</section>
+
+<section class="card">
+<h2 class="text-lg font-bold mb-5">Interest Summary</h2>
+
+<div class="result">
+<p class="text-sm text-indigo-700 dark:text-indigo-300">Future Value</p>
+<h2 id="future" class="text-3xl font-extrabold mt-2">₹0</h2>
+<p class="text-xs text-slate-500 mt-2">Total value after interest</p>
+</div>
+
+<div class="grid grid-cols-2 gap-3 mt-4">
+<div class="metric">
+<p class="text-xs text-slate-500">Principal</p>
+<h3 id="principalResult" class="font-bold mt-2">₹0</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Interest Earned</p>
+<h3 id="earned" class="font-bold mt-2">₹0</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Interest Rate</p>
+<h3 id="rateResult" class="font-bold mt-2">0%</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Growth</p>
+<h3 id="growth" class="font-bold mt-2">0%</h3>
+</div>
+</div>
+
+<div class="mt-6">
+<div class="flex justify-between text-sm mb-2">
+<span>Principal</span>
+<strong id="principalPercent">0%</strong>
+</div>
+<div class="h-3 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden flex">
+<div id="principalBar" class="bg-indigo-500 h-full"></div>
+<div id="interestBar" class="bg-emerald-500 h-full"></div>
+</div>
+<div class="flex justify-between text-xs text-slate-500 mt-2">
+<span>Principal</span>
+<span>Interest</span>
+</div>
+</div>
+</section>
+
+</div>
+
+<section class="card mt-6">
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+<h2 class="text-lg font-bold">Yearly Growth Schedule</h2>
+<div class="flex gap-2">
+<button class="btn secondary" onclick="downloadCSV()">Export CSV</button>
+<button class="btn primary" onclick="downloadPDF()">Export PDF</button>
+</div>
+</div>
+
+<div class="overflow-x-auto">
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Opening Balance</th>
+<th>Interest</th>
+<th>Closing Balance</th>
+</tr>
+</thead>
+<tbody id="schedule"></tbody>
+</table>
+</div>
+</section>
+
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const val=id=>Number($(id).value);
+
+let scheduleData=[];
+let summaryData=[];
+
+function money(n){
+return new Intl.NumberFormat('en-IN',{
+style:'currency',
+currency:$('currency').value,
+maximumFractionDigits:2
+}).format(n);
+}
+
+function calculate(){
+
+const principal=val('principal');
+const rate=val('rate');
+const years=val('years');
+const type=$('type').value;
+const frequency=val('frequency');
+
+const error=$('error');
+
+if(!Number.isFinite(principal)||!Number.isFinite(rate)||!Number.isFinite(years)||
+principal<=0||rate<0||years<=0||years>100){
+error.textContent='Enter a positive principal, valid rate and a period between 0 and 100 years.';
+error.classList.remove('hidden');
+return;
+}
+
+error.classList.add('hidden');
+
+$('frequencyBox').style.display=type==='compound'?'block':'none';
+
+let future=0;
+
+if(type==='simple'){
+future=principal*(1+(rate/100)*years);
+}else{
+future=principal*Math.pow(1+rate/(100*frequency),frequency*years);
+}
+
+const interest=future-principal;
+const growth=interest/principal*100;
+
+$('future').textContent=money(future);
+$('principalResult').textContent=money(principal);
+$('earned').textContent=money(interest);
+$('rateResult').textContent=rate+'%';
+$('growth').textContent=growth.toFixed(2)+'%';
+
+const principalShare=principal/future*100;
+const interestShare=interest/future*100;
+
+$('principalPercent').textContent=principalShare.toFixed(1)+'%';
+$('principalBar').style.width=principalShare+'%';
+$('interestBar').style.width=interestShare+'%';
+
+scheduleData=[];
+
+let previous=principal;
+
+for(let year=1;year<=Math.ceil(years);year++){
+
+const actualYears=Math.min(year,years);
+let closing;
+
+if(type==='simple'){
+closing=principal*(1+(rate/100)*actualYears);
+}else{
+closing=principal*Math.pow(1+rate/(100*frequency),frequency*actualYears);
+}
+
+const opening=previous;
+const earnedThisYear=closing-opening;
+
+scheduleData.push([
+year,
+opening.toFixed(2),
+earnedThisYear.toFixed(2),
+closing.toFixed(2)
+]);
+
+previous=closing;
+}
+
+$('schedule').innerHTML=scheduleData.map(row=>`
+<tr>${row.map(x=>`<td>${x}</td>`).join('')}</tr>
+`).join('');
+
+summaryData=[
+['Interest Type',type],
+['Principal',principal],
+['Annual Rate',rate+'%'],
+['Time Period',years+' years'],
+['Future Value',future],
+['Interest Earned',interest],
+['Total Growth',growth.toFixed(2)+'%']
+];
+}
+
+function downloadCSV(){
+exportCSV('interest-growth.csv',[
+['Year','Opening Balance','Interest','Closing Balance'],
+...scheduleData
+]);
+}
+
+function downloadPDF(){
+exportPDF(
+'interest-report.pdf',
+'Interest Calculator Report',
+summaryData,
+['Year','Opening Balance','Interest','Closing Balance'],
+scheduleData
+);
+}
+
+function resetCalculator(){
+$('principal').value=100000;
+$('rate').value=8;
+$('years').value=5;
+$('type').value='compound';
+$('frequency').value=12;
+calculate();
+}
+
+calculate();
+</script>
+</body>
+</html>
