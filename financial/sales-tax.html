@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sales Tax Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--surface:#f1f5f9;--text:#172033;--muted:#64748b;--border:#e2e8f0;--primary:#4f46e5}
+html.dark{--bg:#0b1220;--card:#111c2e;--surface:#1c2a40;--text:#e5edf8;--muted:#9aabc2;--border:#293950;--primary:#818cf8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:17px}.input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text)}
+label{display:block;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:7px}.muted{color:var(--muted)}
+.btn{padding:11px 16px;border-radius:10px;font-weight:700;cursor:pointer}.primary{background:var(--primary);color:white}.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.stat{padding:18px;background:var(--surface);border-radius:13px}.value{font-size:clamp(22px,3vw,30px);font-weight:800;margin-top:6px}
+</style>
+</head>
+<body>
+<header class="border-b" style="background:var(--card);border-color:var(--border)">
+<div class="max-w-7xl mx-auto p-4 flex justify-between items-center">
+<div><a href="../index.html" class="muted text-sm">← Dashboard</a><h1 class="text-2xl font-extrabold mt-1">Sales Tax Calculator</h1></div>
+<button id="themeBtn" class="btn secondary">🌙 Dark</button>
+</div></header>
+
+<main class="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
+<p class="muted text-sm">Calculate tax-inclusive and tax-exclusive prices, GST, and final selling price.</p>
+<div class="grid lg:grid-cols-2 gap-6">
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-5">Price Details</h2>
+<div class="space-y-4">
+<div><label>Product / Service Price (₹)</label><input id="price" class="input" type="number" value="10000" min="0"></div>
+<div><label>Tax Rate (%)</label><select id="rate" class="input"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18" selected>18%</option><option value="28">28%</option><option value="custom">Custom Rate</option></select></div>
+<div id="customBox" class="hidden"><label>Custom Tax Rate (%)</label><input id="customRate" class="input" type="number" value="18" min="0" max="100"></div>
+<div><label>Calculation Mode</label><select id="mode" class="input"><option value="exclusive">Add tax to base price</option><option value="inclusive">Extract tax from final price</option></select></div>
+<div><label>Quantity</label><input id="quantity" class="input" type="number" value="1" min="1"></div>
+<div><label>Discount (%)</label><input id="discount" class="input" type="number" value="0" min="0" max="100" step=".1"></div>
+</div>
+<button onclick="calculate()" class="btn primary w-full mt-6">Calculate Tax</button>
+</section>
+
+<section class="card p-5">
+<h2 class="font-bold text-lg mb-5">Calculation Result</h2>
+<div class="stat mb-3"><div class="muted text-sm">Final Amount Payable</div><div class="value" id="final">₹0</div></div>
+<div class="grid grid-cols-2 gap-3">
+<div class="stat"><div class="muted text-sm">Base Amount</div><div class="value" id="base">₹0</div></div>
+<div class="stat"><div class="muted text-sm">Total Tax</div><div class="value" id="tax">₹0</div></div>
+<div class="stat"><div class="muted text-sm">Discount</div><div class="value" id="discountOut">₹0</div></div>
+<div class="stat"><div class="muted text-sm">Effective Tax Rate</div><div class="value" id="effective">0%</div></div>
+</div>
+</section>
+</div>
+
+<section class="card p-5">
+<div class="flex justify-between flex-wrap gap-3 items-center mb-4">
+<h2 class="font-bold text-lg">Invoice Breakdown</h2>
+<div class="flex gap-2"><button onclick="csv()" class="btn secondary">CSV</button><button onclick="pdf()" class="btn secondary">PDF</button></div>
+</div>
+<div id="breakdown" class="space-y-3"></div>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+let result={};
+$('rate').onchange=()=>{$('customBox').classList.toggle('hidden',$('rate').value!=='custom')};
+
+function calculate(){
+ const price=+$('price').value,quantity=+$('quantity').value;
+ const discount=+$('discount').value;
+ const rate=$('rate').value==='custom'?+$('customRate').value:+$('rate').value;
+ if(![price,quantity,discount,rate].every(Number.isFinite)||price<0||quantity<=0||discount<0||discount>100||rate<0||rate>100){
+  alert('Please enter valid values.');return;
+ }
+ const gross=price*quantity;
+ const discountAmount=gross*discount/100;
+ const net=gross-discountAmount;
+ let base,tax,final;
+ if($('mode').value==='exclusive'){
+  base=net;tax=base*rate/100;final=base+tax;
+ }else{
+  final=net;base=rate===0?final:final/(1+rate/100);tax=final-base;
+ }
+ $('final').textContent=money(final);
+ $('base').textContent=money(base);
+ $('tax').textContent=money(tax);
+ $('discountOut').textContent=money(discountAmount);
+ $('effective').textContent=(base>0?tax/base*100:0).toFixed(2)+'%';
+ const parts=[
+  ['Original Price',gross],
+  ['Discount',-discountAmount],
+  ['Taxable Base',base],
+  ['Tax Rate',rate+'%'],
+  ['Sales Tax / GST',tax],
+  ['Final Amount',final]
+ ];
+ $('breakdown').innerHTML=parts.map(p=>`<div class="flex justify-between gap-3 border-b pb-3" style="border-color:var(--border)"><span class="muted">${p[0]}</span><b>${typeof p[1]==='number'?money(p[1]):p[1]}</b></div>`).join('');
+ result={parts,price,quantity,rate,base,tax,final};
+}
+function csv(){
+ if(!result.parts)return;
+ const s='Component,Value\n'+result.parts.map(p=>'"'+p[0]+'","'+p[1]+'"').join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'text/csv'}));a.download='sales-tax.csv';a.click();
+}
+function pdf(){
+ if(!result.parts)return;
+ if(!window.jspdf){alert('PDF library unavailable');return}
+ const d=new jspdf.jsPDF();d.text('Sales Tax Calculation',14,15);
+ d.autoTable({startY:25,head:[['Component','Value']],body:result.parts.map(p=>[p[0],typeof p[1]==='number'?money(p[1]):p[1]])});d.save('sales-tax.pdf');
+}
+function theme(t){document.documentElement.classList.toggle('dark',t==='dark');localStorage.setItem('calcsuite-theme',t);$('themeBtn').textContent=t==='dark'?'☀️ Light':'🌙 Dark'}
+$('themeBtn').onclick=()=>theme(document.documentElement.classList.contains('dark')?'light':'dark');
+theme(localStorage.getItem('calcsuite-theme')||'light');calculate();
+</script>
+</body>
+</html>
