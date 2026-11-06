@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Loan Calculator — CalcHub</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="../js/common.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,sans-serif}
+.card{background:white;border:1px solid #e2e8f0;border-radius:18px;padding:22px}
+.dark .card{background:#11131c;border-color:#ffffff12}
+.field{width:100%;padding:12px 14px;border:1px solid #cbd5e1;border-radius:10px;background:transparent;outline:none}
+.dark .field{border-color:#ffffff20;color:white}
+.field:focus{border-color:#6366f1;box-shadow:0 0 0 3px #6366f120}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+.btn{padding:11px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}
+.primary{background:#4f46e5;color:white}
+.secondary{border:1px solid #cbd5e1}
+.dark .secondary{border-color:#ffffff25}
+.result{background:#eef2ff;border-radius:14px;padding:18px}
+.dark .result{background:#6366f115}
+.metric{padding:14px;border-radius:12px;background:#f8fafc}
+.dark .metric{background:#ffffff08}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:11px;text-align:right;border-bottom:1px solid #e2e8f0}
+th:first-child,td:first-child{text-align:left}
+.dark th,.dark td{border-color:#ffffff15}
+</style>
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-[#08090d] dark:text-white">
+
+<header class="border-b border-slate-200 dark:border-white/10">
+<div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+<div>
+<h1 class="text-xl font-extrabold">🚗 Auto Loan Calculator</h1>
+<p class="text-xs text-slate-500 mt-1">Calculate your car financing costs</p>
+</div>
+<div class="flex gap-2">
+<a href="../index.html" class="btn secondary">← Dashboard</a>
+<button id="themeToggle" class="btn secondary" onclick="document.documentElement.classList.toggle('dark')">◐</button>
+</div>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4 py-8">
+<div class="grid lg:grid-cols-2 gap-6">
+
+<section class="card">
+<h2 class="text-lg font-bold mb-5">Vehicle & Loan Details</h2>
+
+<div class="grid sm:grid-cols-2 gap-4">
+
+<div class="sm:col-span-2">
+<label>Currency</label>
+<select id="currency" class="field" onchange="calculate()">
+<option value="INR">INR — ₹</option>
+<option value="USD">USD — $</option>
+<option value="EUR">EUR — €</option>
+<option value="GBP">GBP — £</option>
+</select>
+</div>
+
+<div>
+<label>Vehicle Price</label>
+<input id="price" class="field" type="number" min="0" value="1500000" oninput="calculate()">
+</div>
+
+<div>
+<label>Down Payment</label>
+<input id="down" class="field" type="number" min="0" value="300000" oninput="calculate()">
+</div>
+
+<div>
+<label>Trade-in Value</label>
+<input id="trade" class="field" type="number" min="0" value="0" oninput="calculate()">
+</div>
+
+<div>
+<label>Sales Tax (%)</label>
+<input id="tax" class="field" type="number" min="0" max="100" step="0.01" value="5" oninput="calculate()">
+</div>
+
+<div>
+<label>Interest Rate (% p.a.)</label>
+<input id="rate" class="field" type="number" min="0" step="0.01" value="9" oninput="calculate()">
+</div>
+
+<div>
+<label>Loan Term (Years)</label>
+<select id="years" class="field" onchange="calculate()">
+<option value="1">1 Year</option>
+<option value="2">2 Years</option>
+<option value="3">3 Years</option>
+<option value="4">4 Years</option>
+<option value="5" selected>5 Years</option>
+<option value="6">6 Years</option>
+<option value="7">7 Years</option>
+<option value="8">8 Years</option>
+</select>
+</div>
+
+<div>
+<label>Additional Fees</label>
+<input id="fees" class="field" type="number" min="0" value="10000" oninput="calculate()">
+</div>
+
+</div>
+
+<div id="error" class="hidden mt-4 rounded-lg bg-red-50 text-red-600 p-3 text-sm"></div>
+
+<div class="flex gap-2 mt-6">
+<button onclick="calculate()" class="btn primary flex-1">Calculate Loan</button>
+<button onclick="resetCalculator()" class="btn secondary">Reset</button>
+</div>
+</section>
+
+<section class="card">
+<h2 class="text-lg font-bold mb-5">Loan Summary</h2>
+
+<div class="result">
+<p class="text-sm text-indigo-700 dark:text-indigo-300">Estimated Monthly Payment</p>
+<h2 id="monthly" class="text-3xl font-extrabold mt-2">₹0</h2>
+<p class="text-xs text-slate-500 mt-2">Your estimated monthly car EMI</p>
+</div>
+
+<div class="grid grid-cols-2 gap-3 mt-4">
+<div class="metric">
+<p class="text-xs text-slate-500">Vehicle Tax</p>
+<h3 id="taxAmount" class="font-bold mt-2">₹0</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Loan Amount</p>
+<h3 id="loanAmount" class="font-bold mt-2">₹0</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Total Interest</p>
+<h3 id="interest" class="font-bold mt-2">₹0</h3>
+</div>
+<div class="metric">
+<p class="text-xs text-slate-500">Total Payment</p>
+<h3 id="totalPayment" class="font-bold mt-2">₹0</h3>
+</div>
+</div>
+
+<div class="mt-5">
+<h3 class="font-bold text-sm mb-3">Cost Breakdown</h3>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-slate-500">Down Payment</span>
+<strong id="downDisplay">₹0</strong>
+</div>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-slate-500">Trade-in</span>
+<strong id="tradeDisplay">₹0</strong>
+</div>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-slate-500">Additional Fees</span>
+<strong id="feesDisplay">₹0</strong>
+</div>
+</div>
+
+</section>
+</div>
+
+<section class="card mt-6">
+<div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+<h2 class="text-lg font-bold">Amortization Schedule</h2>
+<div class="flex gap-2">
+<button class="btn secondary" onclick="downloadCSV()">Export CSV</button>
+<button class="btn primary" onclick="downloadPDF()">Export PDF</button>
+</div>
+</div>
+
+<div class="overflow-x-auto">
+<table>
+<thead>
+<tr>
+<th>Month</th>
+<th>Payment</th>
+<th>Principal</th>
+<th>Interest</th>
+<th>Balance</th>
+</tr>
+</thead>
+<tbody id="schedule"></tbody>
+</table>
+</div>
+</section>
+
+</main>
+
+<script>
+let scheduleData = [];
+let summaryData = [];
+
+const $ = id => document.getElementById(id);
+const val = id => Number($(id).value);
+
+function money(n){
+return new Intl.NumberFormat('en-IN',{
+style:'currency',
+currency:$('currency').value,
+maximumFractionDigits:0
+}).format(n);
+}
+
+function calculate(){
+
+const price=val('price');
+const down=val('down');
+const trade=val('trade');
+const taxRate=val('tax');
+const rate=val('rate');
+const years=val('years');
+const fees=val('fees');
+
+const error=$('error');
+
+if([price,down,trade,taxRate,rate,years,fees].some(x=>!Number.isFinite(x)||x<0)){
+error.textContent='Please enter valid positive values.';
+error.classList.remove('hidden');
+return;
+}
+
+if(price<=0 || down+trade>price || taxRate>100){
+error.textContent='Check vehicle price, down payment, trade-in and tax values.';
+error.classList.remove('hidden');
+return;
+}
+
+error.classList.add('hidden');
+
+const taxAmount=price*taxRate/100;
+const principal=price+taxAmount+fees-down-trade;
+const months=years*12;
+const monthlyRate=rate/1200;
+
+if(principal<=0){
+error.textContent='Your down payment and trade-in cannot exceed the vehicle cost.';
+error.classList.remove('hidden');
+return;
+}
+
+const emi=monthlyRate===0
+?principal/months
+:principal*monthlyRate*Math.pow(1+monthlyRate,months)/(Math.pow(1+monthlyRate,months)-1);
+
+let balance=principal;
+let totalInterest=0;
+scheduleData=[];
+
+for(let i=1;i<=months;i++){
+
+const interest=balance*monthlyRate;
+const principalPaid=Math.min(balance,emi-interest);
+const payment=principalPaid+interest;
+
+balance=Math.max(0,balance-principalPaid);
+totalInterest+=interest;
+
+scheduleData.push([
+i,
+payment.toFixed(2),
+principalPaid.toFixed(2),
+interest.toFixed(2),
+balance.toFixed(2)
+]);
+}
+
+$('monthly').textContent=money(emi);
+$('taxAmount').textContent=money(taxAmount);
+$('loanAmount').textContent=money(principal);
+$('interest').textContent=money(totalInterest);
+$('totalPayment').textContent=money(principal+totalInterest);
+$('downDisplay').textContent=money(down);
+$('tradeDisplay').textContent=money(trade);
+$('feesDisplay').textContent=money(fees);
+
+$('schedule').innerHTML=scheduleData.map(row=>`
+<tr>${row.map(x=>`<td>${typeof x==='number'?x:escapeText(x)}</td>`).join('')}</tr>
+`).join('');
+
+summaryData=[
+['Vehicle Price',price],
+['Down Payment',down],
+['Trade-in Value',trade],
+['Sales Tax',taxAmount],
+['Additional Fees',fees],
+['Loan Amount',principal],
+['Monthly EMI',emi],
+['Total Interest',totalInterest],
+['Total Payment',principal+totalInterest]
+];
+}
+
+function escapeText(value){
+return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function downloadCSV(){
+exportCSV('auto-loan-schedule.csv',[
+['Month','Payment','Principal','Interest','Balance'],
+...scheduleData
+]);
+}
+
+function downloadPDF(){
+exportPDF(
+'auto-loan-report.pdf',
+'Auto Loan Calculator Report',
+summaryData,
+['Month','Payment','Principal','Interest','Balance'],
+scheduleData
+);
+}
+
+function resetCalculator(){
+$('price').value=1500000;
+$('down').value=300000;
+$('trade').value=0;
+$('tax').value=5;
+$('rate').value=9;
+$('years').value=5;
+$('fees').value=10000;
+calculate();
+}
+
+calculate();
+</script>
+</body>
+</html>
