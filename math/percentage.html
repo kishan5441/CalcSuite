@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Percentage Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#0d9488}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px}
+input,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;color:var(--muted)}
+.btn{padding:12px 17px;border-radius:10px;background:var(--accent);color:white;font-weight:700}
+.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.muted{color:var(--muted)}.value{font-size:30px;font-weight:800;color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="max-w-4xl mx-auto p-4 flex justify-between">
+<a href="../index.html" class="font-bold text-teal-600">← CalcSuite</a>
+<button id="themeToggle" class="btn secondary">☼ Theme</button>
+</header>
+<main class="max-w-4xl mx-auto p-4 space-y-5">
+<section>
+<p class="text-sm font-bold text-teal-600">MATH TOOLS</p>
+<h1 class="text-3xl font-extrabold mt-1">Percentage Calculator</h1>
+<p class="muted mt-2">Calculate percentages, changes, comparisons and conversions.</p>
+</section>
+
+<section class="card">
+<label>Calculation type</label>
+<select id="mode" onchange="renderForm()">
+<option value="of">What is X% of Y?</option>
+<option value="is">X is what percentage of Y?</option>
+<option value="change">Percentage change</option>
+<option value="increase">Increase a value by X%</option>
+<option value="decrease">Decrease a value by X%</option>
+<option value="compare">Compare two values</option>
+<option value="fraction">Percentage to fraction</option>
+<option value="toPercent">Fraction to percentage</option>
+</select>
+
+<div id="fields" class="grid sm:grid-cols-2 gap-4 mt-5"></div>
+<button class="btn w-full mt-5" onclick="calculate()">Calculate</button>
+</section>
+
+<section id="result" class="card hidden">
+<p class="muted text-sm">Your result</p>
+<div id="answer" class="value mt-2"></div>
+<p id="explanation" class="muted text-sm mt-3"></p>
+</section>
+</main>
+
+<script>
+initTheme();
+
+function field(id,label,value=''){
+ return `<div><label>${label}</label><input type="number" id="${id}" step="any" value="${value}" placeholder="Enter value"></div>`;
+}
+
+function renderForm(){
+ const mode=document.getElementById('mode').value;
+ let html='';
+
+ if(mode==='of'){
+  html=field('a','Percentage (%)','20')+field('b','Value','500');
+ }else if(mode==='is'){
+  html=field('a','Part (X)','25')+field('b','Whole (Y)','100');
+ }else if(['change','compare'].includes(mode)){
+  html=field('a','Original / First value','100')+field('b','New / Second value','120');
+ }else if(['increase','decrease'].includes(mode)){
+  html=field('a','Original value','500')+field('b','Percentage (%)','20');
+ }else if(mode==='fraction'){
+  html=field('a','Percentage (%)','75');
+ }else{
+  html=field('a','Numerator','3')+field('b','Denominator','4');
+ }
+ document.getElementById('fields').innerHTML=html;
+ document.getElementById('result').classList.add('hidden');
+}
+
+function gcd(a,b){
+ a=Math.abs(a);b=Math.abs(b);
+ while(b){[a,b]=[b,a%b]}
+ return a;
+}
+
+function calculate(){
+ const mode=document.getElementById('mode').value;
+ const a=Number(document.getElementById('a').value);
+ const b=document.getElementById('b')?Number(document.getElementById('b').value):null;
+
+ if(!Number.isFinite(a)||a<0&&['fraction'].includes(mode)){
+  alert('Enter valid numbers.');return;
+ }
+ if(b!==null&&!Number.isFinite(b)){alert('Enter valid numbers.');return}
+
+ let result='',explain='';
+
+ switch(mode){
+  case 'of':
+   result=(a*b/100).toLocaleString('en-IN',{maximumFractionDigits:8});
+   explain=a+'% of '+b+' = '+result;
+   break;
+  case 'is':
+   if(b===0){alert('Whole value cannot be zero.');return}
+   result=(a/b*100).toFixed(4)+'%';
+   explain=a+' ÷ '+b+' × 100';
+   break;
+  case 'change':
+   if(a===0){alert('Original value cannot be zero.');return}
+   const change=(b-a)/Math.abs(a)*100;
+   result=(change>0?'+':'')+change.toFixed(2)+'%';
+   explain=change>0?'Percentage increase':change<0?'Percentage decrease':'No change';
+   break;
+  case 'increase':
+   result=(a*(1+b/100)).toLocaleString('en-IN',{maximumFractionDigits:8});
+   explain='Original: '+a+' | Increase: '+(a*b/100);
+   break;
+  case 'decrease':
+   result=(a*(1-b/100)).toLocaleString('en-IN',{maximumFractionDigits:8});
+   explain='Original: '+a+' | Decrease: '+(a*b/100);
+   break;
+  case 'compare':
+   result=(a===b?'Both values are equal':a>b?'First value is greater':'Second value is greater');
+   explain='Difference: '+Math.abs(a-b);
+   break;
+  case 'fraction':
+   if(a<0){alert('Percentage must not be negative.');return}
+   const den=1000000;
+   let num=Math.round(a*den/100),d=den,g=gcd(num,d);
+   num/=g;d/=g;
+   result=num+'/'+d;
+   explain=a+'% = '+a+'/100, simplified to '+result;
+   break;
+  case 'toPercent':
+   if(b===0){alert('Denominator cannot be zero.');return}
+   result=(a/b*100).toFixed(4)+'%';
+   explain=a+'/'+b+' × 100';
+   break;
+ }
+
+ document.getElementById('answer').textContent=result;
+ document.getElementById('explanation').textContent=explain;
+ document.getElementById('result').classList.remove('hidden');
+}
+
+renderForm();
+</script>
+</body>
+</html>
