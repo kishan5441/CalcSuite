@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Loan Calculator | CalcSuite</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="../js/common.js"></script>
+
+<style>
+
+:root {
+    --bg:#080d18;
+    --card:#111a2b;
+    --text:#f1f5f9;
+    --muted:#94a3b8;
+    --border:#263247;
+    --accent:#8b7cff;
+}
+
+body.light {
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --text:#172033;
+    --muted:#64748b;
+    --border:#e2e8f0;
+    --accent:#6555df;
+}
+
+* {
+    box-sizing:border-box;
+}
+
+body {
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial,sans-serif;
+    transition:.2s;
+}
+
+.panel {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+}
+
+.field {
+    width:100%;
+    padding:12px;
+    border-radius:9px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    color:var(--text);
+    outline:none;
+}
+
+.field:focus {
+    border-color:var(--accent);
+}
+
+.label {
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:7px;
+    font-weight:bold;
+}
+
+.stat {
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:15px;
+}
+
+.btn {
+    padding:11px 16px;
+    border-radius:9px;
+    font-size:13px;
+    font-weight:bold;
+}
+
+.primary {
+    background:var(--accent);
+    color:white;
+}
+
+.secondary {
+    border:1px solid var(--border);
+}
+
+.muted {
+    color:var(--muted);
+}
+
+.accent {
+    color:var(--accent);
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+}
+
+td,th {
+    padding:12px;
+    border-bottom:1px solid var(--border);
+    text-align:right;
+    white-space:nowrap;
+}
+
+td:first-child,th:first-child {
+    text-align:left;
+}
+
+th {
+    color:var(--muted);
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header class="sticky top-0 z-40 border-b p-4"
+style="background:var(--card);border-color:var(--border)">
+
+<div class="max-w-7xl mx-auto flex justify-between items-center">
+
+    <div class="flex items-center gap-3">
+
+        <a href="../index.html" class="btn secondary">
+            ← Back to Dashboard
+        </a>
+
+        <b>Calc<span class="accent">Suite</span></b>
+
+    </div>
+
+    <button id="themeToggle" class="btn secondary">
+        ☀️ / 🌙
+    </button>
+
+</div>
+
+</header>
+
+
+<main class="max-w-7xl mx-auto p-4 sm:p-6">
+
+    <div class="mb-8">
+
+        <p class="accent text-xs font-bold tracking-widest">
+            FINANCIAL CALCULATOR
+        </p>
+
+        <h1 class="text-3xl sm:text-4xl font-bold mt-2">
+            Loan Calculator
+        </h1>
+
+        <p class="muted mt-2">
+            Calculate your EMI, total repayment, interest and
+            loan payoff timeline.
+        </p>
+
+    </div>
+
+
+    <div class="grid lg:grid-cols-12 gap-5">
+
+        <!-- INPUTS -->
+
+        <section class="panel p-5 lg:col-span-5">
+
+            <h2 class="text-xl font-bold mb-5">
+                Loan Details
+            </h2>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+
+                <div class="sm:col-span-2">
+
+                    <label class="label">Currency</label>
+
+                    <select id="currency" class="field">
+
+                        <option value="INR">INR ₹</option>
+                        <option value="USD">USD $</option>
+                        <option value="GBP">GBP £</option>
+                        <option value="EUR">EUR €</option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="sm:col-span-2">
+
+                    <label class="label">Loan Amount</label>
+
+                    <input id="amount" class="field"
+                    type="number" min="1" value="500000">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Interest Rate (%)</label>
+
+                    <input id="rate" class="field"
+                    type="number" min="0" step=".01" value="10.5">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Loan Term (Years)</label>
+
+                    <input id="years" class="field"
+                    type="number" min=".1" max="50" step=".1" value="5">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Loan Term (Months)</label>
+
+                    <input id="months" class="field"
+                    type="number" min="1" max="600" value="60">
+
+                </div>
+
+
+                <div>
+
+                    <label class="label">Extra Monthly Payment</label>
+
+                    <input id="extra" class="field"
+                    type="number" min="0" value="0">
+
+                </div>
+
+
+                <div class="sm:col-span-2">
+
+                    <label class="label">Processing Fee</label>
+
+                    <input id="fees" class="field"
+                    type="number" min="0" value="2500">
+
+                </div>
+
+            </div>
+
+            <p id="error" class="text-red-400 text-xs mt-4"></p>
+
+            <div class="flex gap-2 mt-5">
+
+                <button onclick="calculate()"
+                class="btn primary flex-1">
+
+                    Calculate Loan
+
+                </button>
+
+                <button onclick="resetCalculator()"
+                class="btn secondary">
+
+                    Reset
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- RESULTS -->
+
+        <section class="lg:col-span-7 space-y-5">
+
+            <div class="panel p-5">
+
+                <p class="muted text-xs font-bold">
+                    MONTHLY EMI
+                </p>
+
+                <h2 id="emi"
+                class="text-4xl font-bold accent mt-3">
+
+                    ₹0
+
+                </h2>
+
+                <p id="caption" class="muted text-xs mt-2"></p>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
+
+                    <div class="stat">
+                        <p class="muted text-xs">Principal</p>
+                        <h3 id="principal" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">Total Interest</p>
+                        <h3 id="interest" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">Total Repayment</p>
+                        <h3 id="repayment" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">Processing Fee</p>
+                        <h3 id="feeResult" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">Total Cash Outflow</p>
+                        <h3 id="cashOut" class="font-bold mt-2">—</h3>
+                    </div>
+
+                    <div class="stat">
+                        <p class="muted text-xs">Payoff Duration</p>
+                        <h3 id="duration" class="font-bold mt-2">—</h3>
+                    </div>
+
+                </div>
+
+                <div class="mt-6">
+
+                    <div class="flex justify-between text-xs muted mb-2">
+
+                        <span>Principal vs Interest</span>
+
+                        <span id="split">—</span>
+
+                    </div>
+
+                    <div class="h-3 rounded-full flex overflow-hidden bg-slate-700">
+
+                        <div id="principalBar"
+                        style="background:#8b7cff"></div>
+
+                        <div id="interestBar"
+                        style="background:#55dfb2"></div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="panel p-5">
+
+                <h3 class="font-bold">Export Results</h3>
+
+                <p class="muted text-xs mt-1">
+                    Download your loan report and repayment schedule.
+                </p>
+
+                <div class="flex gap-3 mt-4">
+
+                    <button onclick="downloadCSV()"
+                    class="btn secondary flex-1">
+
+                        ↓ Export CSV
+
+                    </button>
+
+                    <button onclick="downloadPDF()"
+                    class="btn primary flex-1">
+
+                        ↓ Export PDF
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <!-- REPAYMENT TABLE -->
+
+    <section class="panel p-5 mt-5">
+
+        <h2 class="font-bold text-xl mb-2">
+            Repayment Schedule
+        </h2>
+
+        <p class="muted text-xs mb-5">
+            Monthly breakdown including extra payments.
+        </p>
+
+        <div class="overflow-x-auto">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Month</th>
+                        <th>Payment</th>
+                        <th>Principal</th>
+                        <th>Interest</th>
+                        <th>Remaining Balance</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="schedule"></tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script>
+
+let result = null;
+
+
+// SYNC YEARS AND MONTHS
+
+let syncing = false;
+
+years.addEventListener("input", () => {
+
+    if (syncing) return;
+
+    syncing = true;
+
+    months.value = Math.round(getNumber("years") * 12);
+
+    syncing = false;
+
+});
+
+months.addEventListener("input", () => {
+
+    if (syncing) return;
+
+    syncing = true;
+
+    years.value = (getNumber("months") / 12).toFixed(2);
+
+    syncing = false;
+
+});
+
+
+// CALCULATOR
+
+function calculate() {
+
+    const amount = getNumber("amount");
+
+    const rate = getNumber("rate");
+
+    const monthsCount = Math.round(getNumber("months"));
+
+    const extra = getNumber("extra");
+
+    const fees = getNumber("fees");
+
+    const currency = document.getElementById("currency").value;
+
+    const error = document.getElementById("error");
+
+    error.textContent = "";
+
+
+    if (
+        amount <= 0 ||
+        rate < 0 ||
+        monthsCount < 1 ||
+        monthsCount > 600 ||
+        extra < 0 ||
+        fees < 0
+    ) {
+
+        error.textContent = "Please enter valid loan details.";
+
+        return;
+
+    }
+
+
+    const r = rate / 1200;
+
+    const emi = r === 0
+        ? amount / monthsCount
+        : amount * r / (1 - Math.pow(1 + r, -monthsCount));
+
+
+    let balance = amount;
+
+    let totalInterest = 0;
+
+    let totalPaid = 0;
+
+    let rows = [];
+
+    let month = 0;
+
+
+    while (balance > 0.005 && month < 1200) {
+
+        month++;
+
+        const interest = balance * r;
+
+        let principalPaid = Math.min(
+            balance,
+            emi + extra - interest
+        );
+
+        if (principalPaid <= 0) {
+
+            error.textContent =
+                "EMI is insufficient to cover monthly interest.";
+
+            return;
+
+        }
+
+        const payment = principalPaid + interest;
+
+        balance = Math.max(0, balance - principalPaid);
+
+        totalInterest += interest;
+
+        totalPaid += payment;
+
+        rows.push([
+            month,
+            payment,
+            principalPaid,
+            interest,
+            balance
+        ]);
+
+    }
+
+
+    result = {
+
+        amount,
+        rate,
+        monthsCount,
+        emi,
+        extra,
+        fees,
+        currency,
+        totalInterest,
+        totalPaid,
+        rows
+
+    };
+
+
+    // RESULTS
+
+    emiResult = document.getElementById("emi");
+
+    emiResult.textContent = formatMoney(emi, currency);
+
+    caption.textContent =
+        monthsCount + " months | " + rate + "% annual interest";
+
+
+    principal.textContent = formatMoney(amount, currency);
+
+    interest.textContent = formatMoney(totalInterest, currency);
+
+    repayment.textContent = formatMoney(totalPaid, currency);
+
+    feeResult.textContent = formatMoney(fees, currency);
+
+    cashOut.textContent = formatMoney(totalPaid + fees, currency);
+
+    duration.textContent = month + " months";
+
+
+    // CHART
+
+    const pp = amount / (amount + totalInterest || 1) * 100;
+
+    principalBar.style.width = pp + "%";
+
+    interestBar.style.width = (100 - pp) + "%";
+
+    split.textContent = pp.toFixed(1) + "% Principal";
+
+
+    // REPAYMENT TABLE
+
+    schedule.innerHTML = rows.map(row => `
+
+        <tr>
+
+            <td>${row[0]}</td>
+
+            <td>${formatMoney(row[1], currency)}</td>
+
+            <td>${formatMoney(row[2], currency)}</td>
+
+            <td>${formatMoney(row[3], currency)}</td>
+
+            <td>${formatMoney(row[4], currency)}</td>
+
+        </tr>
+
+    `).join("");
+
+}
+
+
+// CSV
+
+function downloadCSV() {
+
+    if (!result) calculate();
+
+    if (!result) return;
+
+    const x = result;
+
+    const rows = [
+
+        ["Loan Calculator"],
+
+        ["Loan Amount", x.amount],
+
+        ["Interest Rate", x.rate + "%"],
+
+        ["Term", x.monthsCount + " Months"],
+
+        ["Monthly EMI", x.emi],
+
+        ["Extra Payment", x.extra],
+
+        ["Total Interest", x.totalInterest],
+
+        ["Total Repayment", x.totalPaid],
+
+        ["Processing Fee", x.fees],
+
+        [],
+
+        ["Month", "Payment", "Principal", "Interest", "Balance"],
+
+        ...x.rows
+
+    ];
+
+    exportCSV("loan-report.csv", rows);
+
+}
+
+
+// PDF
+
+function downloadPDF() {
+
+    if (!result) calculate();
+
+    if (!result) return;
+
+    const x = result;
+
+    const summary = [
+
+        ["Loan Amount", formatMoney(x.amount, x.currency)],
+
+        ["Interest Rate", x.rate + "%"],
+
+        ["Term", x.monthsCount + " Months"],
+
+        ["Monthly EMI", formatMoney(x.emi, x.currency)],
+
+        ["Extra Payment", formatMoney(x.extra, x.currency)],
+
+        ["Total Interest", formatMoney(x.totalInterest, x.currency)],
+
+        ["Total Repayment", formatMoney(x.totalPaid, x.currency)],
+
+        ["Processing Fee", formatMoney(x.fees, x.currency)]
+
+    ];
+
+    exportPDF(
+        "loan-report.pdf",
+        "Loan Calculator Report",
+        summary,
+        ["Month", "Payment", "Principal", "Interest", "Balance"],
+        x.rows
+    );
+
+}
+
+
+// RESET
+
+function resetCalculator() {
+
+    amount.value = 500000;
+
+    rate.value = 10.5;
+
+    years.value = 5;
+
+    months.value = 60;
+
+    extra.value = 0;
+
+    fees.value = 2500;
+
+    currency.value = "INR";
+
+    calculate();
+
+}
+
+
+// INITIALIZE
+
+calculate();
+
+</script>
+
+</body>
+</html>
