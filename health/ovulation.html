@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ovulation Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--text:#172033;--muted:#64748b;--border:#e2e8f0;--accent:#0d9488}
+.dark{--bg:#0f172a;--card:#1e293b;--text:#e5edf8;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px}
+input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text)}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px;color:var(--muted)}
+.btn{padding:12px 17px;border-radius:10px;background:var(--accent);color:white;font-weight:700}
+.secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.muted{color:var(--muted)}
+.value{font-size:25px;font-weight:800;color:var(--accent)}
+.day{padding:12px;border-radius:10px;background:var(--bg);border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<header class="max-w-5xl mx-auto p-4 flex justify-between items-center">
+<a href="../index.html" class="font-bold text-teal-600">← CalcSuite</a>
+<button id="themeToggle" class="btn secondary">☼ Theme</button>
+</header>
+
+<main class="max-w-5xl mx-auto p-4 space-y-5">
+<section>
+<p class="text-sm font-bold text-teal-600">HEALTH & FITNESS</p>
+<h1 class="text-3xl font-extrabold mt-1">Ovulation Calculator</h1>
+<p class="muted mt-2">Estimate your ovulation date and most fertile window.</p>
+</section>
+
+<section class="card">
+<h2 class="font-bold text-lg mb-4">Your cycle information</h2>
+<div class="grid sm:grid-cols-2 gap-4">
+<div>
+<label>First day of last period</label>
+<input type="date" id="lastPeriod">
+</div>
+<div>
+<label>Average menstrual cycle length (days)</label>
+<input type="number" id="cycleLength" min="20" max="45" value="28">
+</div>
+<div>
+<label>Average period duration (days)</label>
+<input type="number" id="periodLength" min="1" max="10" value="5">
+</div>
+</div>
+<button class="btn w-full mt-5" onclick="calculate()">Calculate Ovulation</button>
+</section>
+
+<section id="result" class="hidden space-y-4">
+<div class="card">
+<p class="muted text-sm">Estimated ovulation date</p>
+<h2 class="value text-3xl mt-1" id="ovulationDate">--</h2>
+<div class="grid grid-cols-2 gap-3 mt-5">
+<div class="p-4 rounded-xl" style="background:var(--bg)">
+<p class="muted text-xs">Fertile window starts</p>
+<b id="fertileStart">--</b>
+</div>
+<div class="p-4 rounded-xl" style="background:var(--bg)">
+<p class="muted text-xs">Fertile window ends</p>
+<b id="fertileEnd">--</b>
+</div>
+<div class="p-4 rounded-xl" style="background:var(--bg)">
+<p class="muted text-xs">Next expected period</p>
+<b id="nextPeriod">--</b>
+</div>
+<div class="p-4 rounded-xl" style="background:var(--bg)">
+<p class="muted text-xs">Estimated cycle day</p>
+<b id="cycleDay">--</b>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h3 class="font-bold text-lg mb-4">Your fertility calendar</h3>
+<div id="calendar" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+<div class="text-xs muted mt-4">
+🟢 Fertile window &nbsp; 🟣 Estimated ovulation &nbsp; ⚪ Other days
+</div>
+</div>
+
+<div class="card">
+<h3 class="font-bold mb-2">Understanding your results</h3>
+<p class="muted text-sm" id="explanation"></p>
+<div class="flex gap-2 flex-wrap mt-4">
+<button class="btn" onclick="downloadCSV()">Export CSV</button>
+<button class="btn secondary" onclick="downloadPDF()">Export PDF</button>
+</div>
+</div>
+</section>
+
+<div class="card text-sm muted">
+<strong>Important:</strong> Ovulation dates are estimates based on cycle length. They cannot confirm ovulation or guarantee conception. Irregular cycles can make predictions less reliable. Consider ovulation tests and professional medical advice when needed.
+</div>
+</main>
+
+<script>
+initTheme();
+
+let report=null;
+
+function addDays(date,days){
+ const d=new Date(date);
+ d.setDate(d.getDate()+days);
+ return d;
+}
+
+function formatDate(date){
+ return date.toLocaleDateString('en-IN',{
+  day:'numeric',month:'short',year:'numeric'
+ });
+}
+
+function calculate(){
+ const dateValue=document.getElementById('lastPeriod').value;
+ const cycle=getNumber('cycleLength');
+ const period=getNumber('periodLength');
+
+ if(!dateValue){
+  alert('Please select your last period date.');
+  return;
+ }
+
+ if(cycle<20||cycle>45||period<1||period>10){
+  alert('Please enter valid cycle and period lengths.');
+  return;
+ }
+
+ const start=new Date(dateValue+'T12:00:00');
+ const today=new Date();
+ today.setHours(12,0,0,0);
+
+ if(start>today){
+  alert('Last period date cannot be in the future.');
+  return;
+ }
+
+ const ovulation=addDays(start,cycle-14);
+ const fertileStart=addDays(ovulation,-5);
+ const fertileEnd=addDays(ovulation,1);
+ const nextPeriod=addDays(start,cycle);
+ const elapsed=Math.floor((today-start)/86400000);
+ const currentDay=(elapsed%cycle)+1;
+
+ document.getElementById('ovulationDate').textContent=formatDate(ovulation);
+ document.getElementById('fertileStart').textContent=formatDate(fertileStart);
+ document.getElementById('fertileEnd').textContent=formatDate(fertileEnd);
+ document.getElementById('nextPeriod').textContent=formatDate(nextPeriod);
+ document.getElementById('cycleDay').textContent='Day '+currentDay;
+
+ const calendar=[
+  {name:'Fertile window starts',date:fertileStart,color:'#d1fae5'},
+  {name:'Peak fertility begins',date:addDays(ovulation,-2),color:'#d1fae5'},
+  {name:'Estimated ovulation',date:ovulation,color:'#ede9fe'},
+  {name:'Fertile window ends',date:fertileEnd,color:'#d1fae5'},
+  {name:'Next period',date:nextPeriod,color:'var(--bg)'}
+ ];
+
+ document.getElementById('calendar').innerHTML=calendar.map(item=>`
+  <div class="day" style="background:${item.color}">
+   <p class="text-xs font-semibold">${item.name}</p>
+   <b class="text-sm">${formatDate(item.date)}</b>
+  </div>
+ `).join('');
+
+ document.getElementById('explanation').textContent=
+ 'Based on a '+cycle+'-day cycle, ovulation is estimated around cycle day '+(cycle-14)+'. The fertile window is approximately five days before ovulation through one day afterward.';
+
+ report=[
+  ['Last period',formatDate(start)],
+  ['Cycle length',cycle+' days'],
+  ['Period duration',period+' days'],
+  ['Estimated ovulation',formatDate(ovulation)],
+  ['Fertile window starts',formatDate(fertileStart)],
+  ['Fertile window ends',formatDate(fertileEnd)],
+  ['Next expected period',formatDate(nextPeriod)]
+ ];
+
+ document.getElementById('result').classList.remove('hidden');
+}
+
+function downloadCSV(){
+ if(!report)return;
+ exportCSV('ovulation-report.csv',[
+  ['Metric','Value'],
+  ...report
+ ]);
+}
+
+function downloadPDF(){
+ if(!report)return;
+ exportPDF(
+  'ovulation-report.pdf',
+  'Ovulation Calculator Report',
+  'Estimated ovulation and fertile window',
+  ['Metric','Value'],
+  report
+ );
+}
+</script>
+</body>
+</html>
