@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Random Number Generator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../js/common.js"></script>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#64748b;--border:#e5eaf2;--accent:#6366f1}
+body.dark{--bg:#0b1120;--card:#151e30;--text:#f1f5f9;--muted:#94a3b8;--border:#29364b;--accent:#818cf8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px}
+.muted{color:var(--muted)}
+input,select{width:100%;padding:12px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:white;padding:13px 18px;border-radius:10px;font-weight:700}
+.secondary{background:var(--bg);border:1px solid var(--border);padding:10px 14px;border-radius:10px}
+.result{font-size:clamp(35px,8vw,65px);font-weight:800;letter-spacing:-2px;overflow-wrap:anywhere;color:var(--accent)}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px}
+.number-chip{background:var(--bg);border:1px solid var(--border);padding:9px 13px;border-radius:9px;font-weight:600}
+</style>
+</head>
+<body>
+<header class="border-b" style="border-color:var(--border)">
+<div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+<a href="../index.html" class="font-bold text-xl">← CalcSuite</a>
+<button id="themeToggle" class="secondary">🌙 Theme</button>
+</div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 py-8">
+<div class="mb-7">
+<p class="text-sm muted mb-2">MATH CALCULATORS / RANDOM TOOLS</p>
+<h1 class="text-3xl md:text-4xl font-bold">Random Number Generator</h1>
+<p class="muted mt-2">Generate cryptographically secure random numbers within any custom range.</p>
+</div>
+
+<div class="grid lg:grid-cols-5 gap-6">
+<section class="card p-5 lg:col-span-2">
+<h2 class="font-bold text-lg mb-5">Generator Settings</h2>
+
+<div class="space-y-4">
+<div>
+<label class="text-sm font-semibold block mb-2">Minimum Number</label>
+<input type="number" id="min" value="1" step="any">
+</div>
+
+<div>
+<label class="text-sm font-semibold block mb-2">Maximum Number</label>
+<input type="number" id="max" value="100" step="any">
+</div>
+
+<div>
+<label class="text-sm font-semibold block mb-2">Number of Results</label>
+<input type="number" id="count" value="1" min="1" max="1000" step="1">
+</div>
+
+<div>
+<label class="text-sm font-semibold block mb-2">Number Type</label>
+<select id="type" onchange="updatePrecision()">
+<option value="integer">Whole Numbers (Integer)</option>
+<option value="decimal">Decimal Numbers</option>
+</select>
+</div>
+
+<div id="precisionBox" style="display:none">
+<label class="text-sm font-semibold block mb-2">Decimal Places</label>
+<select id="precision">
+<option value="1">1 decimal place</option>
+<option value="2">2 decimal places</option>
+<option value="3">3 decimal places</option>
+<option value="4">4 decimal places</option>
+<option value="5">5 decimal places</option>
+<option value="6" selected>6 decimal places</option>
+</select>
+</div>
+
+<label class="flex items-center gap-3 text-sm">
+<input id="unique" type="checkbox" style="width:17px;height:17px">
+<span>Generate unique numbers (no duplicates)</span>
+</label>
+
+<button class="btn w-full mt-2" onclick="generate()">⚡ Generate Random Numbers</button>
+<button class="secondary w-full" onclick="resetForm()">Reset Settings</button>
+</div>
+</section>
+
+<section class="lg:col-span-3 space-y-5">
+<div class="card p-6 text-center">
+<p class="muted text-sm font-semibold mb-3">YOUR RANDOM NUMBER</p>
+<div id="mainResult" class="result">—</div>
+<p id="resultLabel" class="muted text-sm mt-3">Configure your range and generate.</p>
+<div class="flex justify-center flex-wrap gap-2 mt-5">
+<button class="btn" onclick="generate()">Generate Again</button>
+<button class="secondary" onclick="copyResults()">Copy Results</button>
+</div>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+<div class="stat"><p class="muted text-sm">Generated</p><h2 id="generatedCount" class="text-2xl font-bold mt-2">0</h2></div>
+<div class="stat"><p class="muted text-sm">Minimum</p><h2 id="actualMin" class="text-2xl font-bold mt-2">—</h2></div>
+<div class="stat"><p class="muted text-sm">Maximum</p><h2 id="actualMax" class="text-2xl font-bold mt-2">—</h2></div>
+</div>
+
+<div class="card p-5">
+<div class="flex justify-between items-center gap-3 mb-4">
+<h2 class="font-bold text-lg">Generated Numbers</h2>
+<button class="secondary text-sm" onclick="downloadCSV()">Download CSV</button>
+</div>
+<div id="results" class="flex flex-wrap gap-2 min-h-20">
+<p class="muted text-sm">Your generated numbers will appear here.</p>
+</div>
+</div>
+
+<div class="card p-5">
+<h2 class="font-bold text-lg mb-3">Generation History</h2>
+<div id="history" class="space-y-3">
+<p class="muted text-sm">No generation history yet.</p>
+</div>
+<button class="secondary text-sm mt-4" onclick="clearHistory()">Clear History</button>
+</div>
+</section>
+</div>
+
+<div class="card p-5 mt-6">
+<h2 class="font-bold text-lg mb-2">About Random Number Generation</h2>
+<p class="muted text-sm leading-6">
+This calculator uses the browser's Web Crypto API (crypto.getRandomValues) to generate cryptographically secure random values. Integer generation uses rejection sampling to avoid modulo bias. This is substantially stronger than ordinary Math.random() for unpredictable random values, but it is not a physical true-random-number generator based on hardware entropy measurements.
+</p>
+</div>
+</main>
+
+<script>
+let latestResults=[];
+let historyItems=[];
+
+function secureUint32(){
+ const array=new Uint32Array(1);
+ crypto.getRandomValues(array);
+ return array[0];
+}
+
+/* Uniform integer in the inclusive range [min, max].
+   Rejection sampling avoids modulo bias. */
+function secureRandomInt(min,max){
+ if(!Number.isSafeInteger(min)||!Number.isSafeInteger(max)||min>max){
+  throw new Error('Invalid integer range.');
+ }
+
+ const range=max-min+1;
+ const SPACE=4294967296;
+
+ if(range>SPACE){
+  const arr=new Uint32Array(2);
+  const limit=Math.floor(18446744073709551616/range)*range;
+  let value;
+  do{
+   crypto.getRandomValues(arr);
+   value=arr[0]*4294967296+arr[1];
+  }while(value>=limit);
+  return min+(value%range);
+ }
+
+ const limit=Math.floor(SPACE/range)*range;
+ let value;
+ do{
+  value=secureUint32();
+ }while(value>=limit);
+
+ return min+(value%range);
+}
+
+function secureRandomFloat(){
+ const arr=new Uint32Array(2);
+ crypto.getRandomValues(arr);
+ const value=arr[0]*4294967296+arr[1];
+ return value/18446744073709551616;
+}
+
+function updatePrecision(){
+ document.getElementById('precisionBox').style.display=
+ document.getElementById('type').value==='decimal'?'block':'none';
+}
+
+function generate(){
+ try{
+  if(!window.crypto||!crypto.getRandomValues){
+   throw new Error('Secure random generation is not supported by this browser.');
+  }
+
+  const min=Number(document.getElementById('min').value);
+  const max=Number(document.getElementById('max').value);
+  const count=Number(document.getElementById('count').value);
+  const type=document.getElementById('type').value;
+  const unique=document.getElementById('unique').checked;
+  const precision=Number(document.getElementById('precision').value);
+
+  if(!Number.isFinite(min)||!Number.isFinite(max)||min>max){
+   throw new Error('Please enter a valid minimum and maximum range.');
+  }
+
+  if(!Number.isInteger(count)||count<1||count>1000){
+   throw new Error('Number of results must be between 1 and 1000.');
+  }
+
+  let values=[];
+
+  if(type==='integer'){
+   if(!Number.isSafeInteger(min)||!Number.isSafeInteger(max)){
+    throw new Error('Integer mode requires safe whole-number minimum and maximum values.');
+   }
+
+   const range=max-min+1;
+   if(!Number.isSafeInteger(range)||range<=0){
+    throw new Error('The selected integer range is too large.');
+   }
+
+   if(unique&&count>range){
+    throw new Error(`Only ${range} unique integers are available in this range.`);
+   }
+
+   if(unique){
+    const poolSize=range;
+    const pool=new Set();
+
+    while(pool.size<count){
+     pool.add(secureRandomInt(min,max));
+    }
+    values=[...pool];
+   }else{
+    values=Array.from({length:count},()=>secureRandomInt(min,max));
+   }
+  }else{
+   const factor=10**precision;
+   const scaledMin=Math.ceil(min*factor);
+   const scaledMax=Math.floor(max*factor);
+
+   if(!Number.isSafeInteger(scaledMin)||!Number.isSafeInteger(scaledMax)||scaledMin>scaledMax){
+    throw new Error('The decimal range is invalid or too large for the selected precision.');
+   }
+
+   const range=scaledMax-scaledMin+1;
+
+   if(unique&&count>range){
+    throw new Error(`Only ${range} unique decimal values are available at this precision.`);
+   }
+
+   if(unique){
+    const pool=new Set();
+    while(pool.size<count){
+     pool.add(secureRandomInt(scaledMin,scaledMax));
+    }
+    values=[...pool].map(v=>v/factor);
+   }else{
+    values=Array.from({length:count},()=>secureRandomInt(scaledMin,scaledMax)/factor);
+   }
+  }
+
+  latestResults=values;
+  renderResults(values,type,precision,min,max);
+
+  historyItems.unshift({
+   date:new Date().toLocaleString(),
+   values:values.slice(0,8),
+   count:values.length
+  });
+
+  historyItems=historyItems.slice(0,5);
+  renderHistory();
+
+ }catch(e){
+  alert(e.message);
+ }
+}
+
+function renderResults(values,type,precision,min,max){
+ const first=values[0];
+ document.getElementById('mainResult').textContent=
+ type==='decimal'?first.toFixed(precision):first.toLocaleString('en-US');
+
+ document.getElementById('resultLabel').textContent=
+ values.length===1?'One random number generated':`${values.length} random numbers generated`;
+
+ document.getElementById('generatedCount').textContent=values.length;
+ document.getElementById('actualMin').textContent=Math.min(...values).toLocaleString();
+ document.getElementById('actualMax').textContent=Math.max(...values).toLocaleString();
+
+ document.getElementById('results').innerHTML=values.map(v=>
+ `<span class="number-chip">${type==='decimal'?v.toFixed(precision):v.toLocaleString('en-US')}</span>`
+ ).join('');
+}
+
+async function copyResults(){
+ if(!latestResults.length){
+  alert('Generate numbers first.');return;
+ }
+
+ try{
+  await navigator.clipboard.writeText(latestResults.join(', '));
+  alert('Results copied successfully!');
+ }catch(e){
+  alert('Clipboard access unavailable in this browser.');
+ }
+}
+
+function downloadCSV(){
+ if(!latestResults.length){
+  alert('Generate numbers first.');return;
+ }
+
+ const csv='Random Number\n'+latestResults.join('\n');
+ const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;
+ a.download='calcsuite-random-numbers.csv';
+ a.click();
+ URL.revokeObjectURL(url);
+}
+
+function renderHistory(){
+ document.getElementById('history').innerHTML=historyItems.map(item=>`
+ <div class="p-3 rounded-xl" style="background:var(--bg)">
+ <div class="flex justify-between gap-2 text-xs muted">
+ <span>${item.date}</span><span>${item.count} numbers</span>
+ </div>
+ <p class="text-sm font-semibold mt-2 break-words">${item.values.join(', ')}${item.count>8?' ...':''}</p>
+ </div>
+ `).join('');
+}
+
+function clearHistory(){
+ historyItems=[];
+ renderHistory();
+}
+
+function resetForm(){
+ document.getElementById('min').value=1;
+ document.getElementById('max').value=100;
+ document.getElementById('count').value=1;
+ document.getElementById('type').value='integer';
+ document.getElementById('precision').value=6;
+ document.getElementById('unique').checked=false;
+ updatePrecision();
+ latestResults=[];
+ document.getElementById('mainResult').textContent='—';
+ document.getElementById('resultLabel').textContent='Configure your range and generate.';
+ document.getElementById('generatedCount').textContent='0';
+ document.getElementById('actualMin').textContent='—';
+ document.getElementById('actualMax').textContent='—';
+ document.getElementById('results').innerHTML='<p class="muted text-sm">Your generated numbers will appear here.</p>';
+}
+
+document.getElementById('themeToggle').addEventListener('click',()=>{
+ document.body.classList.toggle('dark');
+ localStorage.setItem('calcsuite-theme',document.body.classList.contains('dark')?'dark':'light');
+});
+
+if(localStorage.getItem('calcsuite-theme')==='dark'){
+ document.body.classList.add('dark');
+}
+
+updatePrecision();
+</script>
+</body>
+</html>
