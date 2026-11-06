@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BMR Calculator | CalcSuite</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--surface:#f1f5f9;--text:#172033;--muted:#64748b;--border:#e2e8f0;--primary:#4f46e5}
+html.dark{--bg:#0b1220;--card:#111c2e;--surface:#1c2a40;--text:#e5edf8;--muted:#9aabc2;--border:#293950;--primary:#818cf8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif}
+.card{background:var(--card);border:1px solid var(--border);border-radius:17px}
+.input{width:100%;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);outline:none}
+label{display:block;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:7px}
+.muted{color:var(--muted)}.btn{padding:11px 16px;border-radius:10px;font-weight:700;cursor:pointer}
+.primary{background:var(--primary);color:white}.secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.stat{padding:18px;background:var(--surface);border-radius:13px}
+.value{font-size:clamp(23px,4vw,32px);font-weight:800;margin-top:6px}
+</style>
+</head>
+<body>
+<header class="border-b" style="background:var(--card);border-color:var(--border)">
+<div class="max-w-6xl mx-auto p-4 flex justify-between items-center">
+<div><a href="../index.html" class="muted text-sm">← Back to Dashboard</a><h1 class="text-2xl font-extrabold mt-1">BMR Calculator</h1></div>
+<button id="themeBtn" class="btn secondary">🌙 Dark</button>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+<p class="muted text-sm">Calculate your Basal Metabolic Rate and estimate daily energy requirements.</p>
+
+<div class="grid lg:grid-cols-2 gap-6">
+<section class="card p-5 md:p-6">
+<h2 class="font-bold text-lg mb-5">Personal Information</h2>
+<div class="space-y-4">
+<div><label>Biological Sex (formula input)</label>
+<select id="gender" class="input"><option value="male">Male</option><option value="female">Female</option></select></div>
+<div><label>Age (years)</label><input id="age" class="input" type="number" value="30" min="18" max="100"></div>
+<div><label>Weight (kg)</label><input id="weight" class="input" type="number" value="70" min="1" step=".1"></div>
+<div><label>Height (cm)</label><input id="height" class="input" type="number" value="175" min="1" step=".1"></div>
+<div><label>Activity Level</label>
+<select id="activity" class="input">
+<option value="1.2">Sedentary — Little or no exercise</option>
+<option value="1.375">Light — Exercise 1–3 days/week</option>
+<option value="1.55" selected>Moderate — Exercise 3–5 days/week</option>
+<option value="1.725">Very Active — Exercise 6–7 days/week</option>
+<option value="1.9">Extra Active — Very intense activity</option>
+</select></div>
+</div>
+<button onclick="calculate()" class="btn primary w-full mt-6">Calculate BMR</button>
+</section>
+
+<section class="card p-5 md:p-6">
+<h2 class="font-bold text-lg mb-5">Your Metabolic Results</h2>
+<div class="stat mb-3"><div class="muted text-sm">Basal Metabolic Rate</div><div class="value" id="bmr">-- kcal/day</div></div>
+<div class="stat mb-3"><div class="muted text-sm">Total Daily Energy Expenditure (TDEE)</div><div class="value" id="tdee">-- kcal/day</div></div>
+<div class="grid grid-cols-2 gap-3">
+<div class="stat"><div class="muted text-sm">Weight Maintenance</div><div class="font-bold text-xl mt-2" id="maintain">--</div></div>
+<div class="stat"><div class="muted text-sm">Activity Multiplier</div><div class="font-bold text-xl mt-2" id="multiplier">--</div></div>
+</div>
+<p class="muted text-sm mt-4" id="insight">Enter your information to calculate your metabolism.</p>
+</section>
+</div>
+
+<section class="card p-5">
+<div class="flex justify-between items-center flex-wrap gap-3 mb-4">
+<h2 class="font-bold text-lg">Daily Calorie Reference</h2>
+<div class="flex gap-2"><button onclick="csv()" class="btn secondary">Export CSV</button><button onclick="pdf()" class="btn secondary">Export PDF</button></div>
+</div>
+<div class="grid sm:grid-cols-3 gap-3">
+<div class="stat"><div class="muted text-sm">Weight Loss Reference</div><div class="value" id="loss">--</div><p class="muted text-xs mt-2">Illustrative 300 kcal/day deficit</p></div>
+<div class="stat"><div class="muted text-sm">Maintenance</div><div class="value" id="maintain2">--</div><p class="muted text-xs mt-2">Estimated daily requirement</p></div>
+<div class="stat"><div class="muted text-sm">Weight Gain Reference</div><div class="value" id="gain">--</div><p class="muted text-xs mt-2">Illustrative 300 kcal/day surplus</p></div>
+</div>
+</section>
+<p class="muted text-xs">BMR is an estimate based on the Mifflin-St Jeor equation. Activity multipliers are approximate. Calorie needs vary with health, body composition and other factors. Consult a qualified professional before major dietary changes.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+let result={};
+function calculate(){
+ const age=+$('age').value,weight=+$('weight').value,height=+$('height').value;
+ const activity=+$('activity').value,gender=$('gender').value;
+ if(![age,weight,height,activity].every(Number.isFinite)||age<18||age>100||weight<=0||height<=0||height>250){
+  alert('Enter valid age, weight and height.');return;
+ }
+ const bmr=10*weight+6.25*height-5*age+(gender==='male'?5:-161);
+ const tdee=bmr*activity;
+ const loss=tdee-300,gain=tdee+300;
+ $('bmr').textContent=Math.round(bmr).toLocaleString('en-IN')+' kcal/day';
+ $('tdee').textContent=Math.round(tdee).toLocaleString('en-IN')+' kcal/day';
+ $('maintain').textContent=Math.round(tdee).toLocaleString('en-IN')+' kcal';
+ $('maintain2').textContent=Math.round(tdee).toLocaleString('en-IN');
+ $('loss').textContent=Math.round(loss).toLocaleString('en-IN');
+ $('gain').textContent=Math.round(gain).toLocaleString('en-IN');
+ $('multiplier').textContent=activity+'×';
+ $('insight').textContent=`Your body is estimated to use approximately ${Math.round(bmr)} calories per day at rest. With your selected activity level, estimated daily energy expenditure is ${Math.round(tdee)} calories.`;
+ result={age,weight,height,gender,bmr,tdee,activity,loss,gain};
+}
+function csv(){
+ if(!result.bmr)return;
+ const data=[['Metric','Value'],['Age',result.age],['Weight',result.weight+' kg'],['Height',result.height+' cm'],['BMR',Math.round(result.bmr)+' kcal/day'],['TDEE',Math.round(result.tdee)+' kcal/day']];
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data.map(r=>r.join(',')).join('\n')],{type:'text/csv'}));a.download='bmr-report.csv';a.click();
+}
+function pdf(){
+ if(!result.bmr)return;
+ if(!window.jspdf){alert('PDF library unavailable');return}
+ const d=new jspdf.jsPDF();d.text('BMR Calculator Report',14,15);
+ d.autoTable({startY:25,head:[['Metric','Value']],body:[['Age',result.age],['Weight',result.weight+' kg'],['Height',result.height+' cm'],['BMR',Math.round(result.bmr)+' kcal/day'],['TDEE',Math.round(result.tdee)+' kcal/day']]});
+ d.save('bmr-report.pdf');
+}
+function theme(t){document.documentElement.classList.toggle('dark',t==='dark');localStorage.setItem('calcsuite-theme',t);$('themeBtn').textContent=t==='dark'?'☀️ Light':'🌙 Dark'}
+$('themeBtn').onclick=()=>theme(document.documentElement.classList.contains('dark')?'light':'dark');
+theme(localStorage.getItem('calcsuite-theme')||'light');calculate();
+</script>
+</body>
+</html>
